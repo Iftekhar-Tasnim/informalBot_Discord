@@ -177,34 +177,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 // Test basic message event handler
-client.on(Events.MessageCreate, (message) => {
-    console.log(`🧪 BASIC TEST: Message from ${message.author.username}: "${message.content}"`);
-});
-
-// Test other events to see if Discord is working
-client.on(Events.GuildCreate, (guild) => {
-    console.log(`🏠 Bot joined guild: ${guild.name}`);
-});
-
-client.on(Events.GuildDelete, (guild) => {
-    console.log(`🚪 Bot left guild: ${guild.name}`);
-});
-
-client.on(Events.ChannelCreate, (channel) => {
-    console.log(`📝 Channel created: ${channel.name}`);
-});
-
-client.on(Events.ChannelDelete, (channel) => {
-    console.log(`🗑️ Channel deleted: ${channel.name}`);
-});
-
-// Test if we can see any user activity
-client.on(Events.PresenceUpdate, (oldPresence, newPresence) => {
-    console.log(`👤 Presence update: ${newPresence.user?.username} - ${newPresence.status}`);
-});
-
-// Handle messages only in active channels
 client.on(Events.MessageCreate, async (message) => {
+    console.log(`🧪 BASIC TEST: Message from ${message.author.username}: "${message.content}"`);
+    
     // Basic message logging for ALL messages
     console.log(`📨 ALL MESSAGE: "${message.content}" from ${message.author.username} in channel ${message.channelId}`);
     
@@ -445,6 +420,28 @@ client.on(Events.MessageCreate, async (message) => {
         console.error(`❌ Error processing message: ${error.message}`);
         console.error(error.stack);
     }
+});
+
+// Test other events to see if Discord is working
+client.on(Events.GuildCreate, (guild) => {
+    console.log(`🏠 Bot joined guild: ${guild.name}`);
+});
+
+client.on(Events.GuildDelete, (guild) => {
+    console.log(`🚪 Bot left guild: ${guild.name}`);
+});
+
+client.on(Events.ChannelCreate, (channel) => {
+    console.log(`📝 Channel created: ${channel.name}`);
+});
+
+client.on(Events.ChannelDelete, (channel) => {
+    console.log(`🗑️ Channel deleted: ${channel.name}`);
+});
+
+// Test if we can see any user activity
+client.on(Events.PresenceUpdate, (oldPresence, newPresence) => {
+    console.log(`👤 Presence update: ${newPresence.user?.username} - ${newPresence.status}`);
 });
 
 client.login(process.env.TOKEN);
