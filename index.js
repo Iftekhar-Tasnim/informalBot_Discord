@@ -80,6 +80,7 @@ client.once('ready', async () => {
     console.log(`🔍 Bot intents: ${client.options.intents.toArray().join(', ')}`);
     console.log(`🔍 Bot permissions: ${client.user.flags?.toArray().join(', ') || 'None'}`);
     console.log(`🔍 Bot is ready and connected to Discord`);
+    console.log(`🔗 Bot is fully connected and ready to receive messages!`);
     
     // Test if we can see guilds
     console.log(`🔍 Connected to ${client.guilds.cache.size} guild(s):`);
@@ -88,6 +89,31 @@ client.once('ready', async () => {
         console.log(`    Channels: ${guild.channels.cache.size}`);
         console.log(`    Members: ${guild.memberCount}`);
     });
+    
+    // Test message sending capability
+    try {
+        const testGuild = client.guilds.cache.first();
+        if (testGuild) {
+            const testChannel = testGuild.channels.cache.find(ch => ch.type === 0); // Text channel
+            if (testChannel) {
+                console.log(`🧪 Testing message sending to #${testChannel.name}...`);
+                const testMsg = await testChannel.send('🧪 **Bot Test Message** - If you see this, the bot can send messages!');
+                console.log(`✅ Test message sent successfully! Message ID: ${testMsg.id}`);
+                
+                // Delete test message after 5 seconds
+                setTimeout(async () => {
+                    try {
+                        await testMsg.delete();
+                        console.log(`🗑️ Test message deleted successfully`);
+                    } catch (error) {
+                        console.log(`❌ Could not delete test message: ${error.message}`);
+                    }
+                }, 5000);
+            }
+        }
+    } catch (error) {
+        console.error(`❌ Failed to send test message: ${error.message}`);
+    }
     
     try {
         const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -176,11 +202,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 });
 
-// Test basic message event handler
+// Handle messages only in active channels
 client.on(Events.MessageCreate, async (message) => {
+    // Ignore bot messages immediately - don't even log them
+    if (message.author.bot) {
+        return;
+    }
+    
     console.log(`🧪 BASIC TEST: Message from ${message.author.username}: "${message.content}"`);
     
-    // Basic message logging for ALL messages
+    // Basic message logging for ALL messages (non-bot only)
     console.log(`📨 ALL MESSAGE: "${message.content}" from ${message.author.username} in channel ${message.channelId}`);
     
     try {
@@ -189,9 +220,9 @@ client.on(Events.MessageCreate, async (message) => {
         console.log(`🔍 Bot active in this channel: ${activeChannels.has(message.channelId)}`);
         console.log(`🔍 Active channels: ${Array.from(activeChannels).join(', ')}`);
         
-        // Ignore bot messages and messages from inactive channels
-        if (message.author.bot || !activeChannels.has(message.channelId)) {
-            console.log(`🚫 Message ignored: Bot message: ${message.author.bot}, Channel active: ${activeChannels.has(message.channelId)}`);
+        // Ignore messages from inactive channels
+        if (!activeChannels.has(message.channelId)) {
+            console.log(`🚫 Message ignored: Channel not active: ${message.channelId}`);
             return;
         }
 
@@ -423,10 +454,6 @@ client.on(Events.MessageCreate, async (message) => {
 });
 
 // Add connection status monitoring
-client.on(Events.ClientReady, () => {
-    console.log(`🔗 Client Ready Event Fired - Bot is fully connected!`);
-});
-
 client.on(Events.Warn, (info) => {
     console.log(`⚠️ Discord.js Warning: ${info}`);
 });
@@ -442,62 +469,6 @@ client.on(Events.Disconnect, (event) => {
 
 client.on(Events.Reconnecting, () => {
     console.log(`🔄 Bot is reconnecting...`);
-});
-
-// Test if we can manually send a message to verify permissions
-client.once('ready', async () => {
-    console.log(`✅ Logged in as ${client.user.tag}`);
-    console.log(`🔍 Bot ID: ${client.user.id}`);
-    console.log(`🔍 Bot intents: ${client.options.intents.toArray().join(', ')}`);
-    console.log(`🔍 Bot permissions: ${client.user.flags?.toArray().join(', ') || 'None'}`);
-    console.log(`🔍 Bot is ready and connected to Discord`);
-    
-    // Test if we can see guilds
-    console.log(`🔍 Connected to ${client.guilds.cache.size} guild(s):`);
-    client.guilds.cache.forEach(guild => {
-        console.log(`  - ${guild.name} (${guild.id})`);
-        console.log(`    Channels: ${guild.channels.cache.size}`);
-        console.log(`    Members: ${guild.memberCount}`);
-    });
-    
-    // Test message sending capability
-    try {
-        const testGuild = client.guilds.cache.first();
-        if (testGuild) {
-            const testChannel = testGuild.channels.cache.find(ch => ch.type === 0); // Text channel
-            if (testChannel) {
-                console.log(`🧪 Testing message sending to #${testChannel.name}...`);
-                const testMsg = await testChannel.send('🧪 **Bot Test Message** - If you see this, the bot can send messages!');
-                console.log(`✅ Test message sent successfully! Message ID: ${testMsg.id}`);
-                
-                // Delete test message after 5 seconds
-                setTimeout(async () => {
-                    try {
-                        await testMsg.delete();
-                        console.log(`🗑️ Test message deleted successfully`);
-                    } catch (error) {
-                        console.log(`❌ Could not delete test message: ${error.message}`);
-                    }
-                }, 5000);
-            }
-        }
-    } catch (error) {
-        console.error(`❌ Failed to send test message: ${error.message}`);
-    }
-    
-    try {
-        const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
-        console.log('🔄 Started refreshing application (/) commands.');
-        
-        await rest.put(
-            Routes.applicationCommands(client.user.id),
-            { body: commands }
-        );
-        
-        console.log('✅ Successfully reloaded application (/) commands.');
-    } catch (error) {
-        console.error('❌ Error refreshing commands:', error);
-    }
 });
 
 // Test other events to see if Discord is working
