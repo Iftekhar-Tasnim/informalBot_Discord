@@ -76,6 +76,9 @@ function initializeChannelTracking(channelId) {
 // Register slash commands when bot is ready
 client.once('ready', async () => {
     console.log(`✅ Logged in as ${client.user.tag}`);
+    console.log(`🔍 Bot ID: ${client.user.id}`);
+    console.log(`🔍 Bot intents: ${client.options.intents.toArray().join(', ')}`);
+    console.log(`🔍 Bot permissions: ${client.user.flags?.toArray().join(', ') || 'None'}`);
     
     try {
         const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -149,12 +152,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 });
 
+// Test basic message event handler
+client.on(Events.MessageCreate, (message) => {
+    console.log(`🧪 BASIC TEST: Message from ${message.author.username}: "${message.content}"`);
+});
+
 // Handle messages only in active channels
 client.on(Events.MessageCreate, async (message) => {
+    // Basic message logging for ALL messages
+    console.log(`📨 ALL MESSAGE: "${message.content}" from ${message.author.username} in channel ${message.channelId}`);
+    
     try {
         // Debug logging
         console.log(`🔍 Message received: "${message.content}" from ${message.author.username} in channel ${message.channelId}`);
         console.log(`🔍 Bot active in this channel: ${activeChannels.has(message.channelId)}`);
+        console.log(`🔍 Active channels: ${Array.from(activeChannels).join(', ')}`);
         
         // Ignore bot messages and messages from inactive channels
         if (message.author.bot || !activeChannels.has(message.channelId)) {
