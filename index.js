@@ -152,8 +152,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
 // Handle messages only in active channels
 client.on(Events.MessageCreate, async (message) => {
     try {
+        // Debug logging
+        console.log(`🔍 Message received: "${message.content}" from ${message.author.username} in channel ${message.channelId}`);
+        console.log(`🔍 Bot active in this channel: ${activeChannels.has(message.channelId)}`);
+        
         // Ignore bot messages and messages from inactive channels
-        if (message.author.bot || !activeChannels.has(message.channelId)) return;
+        if (message.author.bot || !activeChannels.has(message.channelId)) {
+            console.log(`🚫 Message ignored: Bot message: ${message.author.bot}, Channel active: ${activeChannels.has(message.channelId)}`);
+            return;
+        }
 
         const channelId = message.channelId;
         const userId = message.author.id;
@@ -161,9 +168,12 @@ client.on(Events.MessageCreate, async (message) => {
         const messageContent = message.content.trim();
         const content = message.content.toLowerCase();
         
+        console.log(`✅ Processing message: "${messageContent}" from ${userName} (${userId})`);
+        
         // Get or initialize tracking for this channel
         let tracking = channelTracking.get(channelId);
         if (!tracking) {
+            console.log(`🔄 Initializing tracking for channel ${channelId}`);
             initializeChannelTracking(channelId);
             tracking = channelTracking.get(channelId);
         }
@@ -173,6 +183,8 @@ client.on(Events.MessageCreate, async (message) => {
             console.error(`❌ Failed to initialize tracking for channel ${channelId}`);
             return;
         }
+        
+        console.log(`📊 Current tracking: Users: ${tracking.users.size}/10, Messages: ${tracking.messageCount}`);
         
         // Check if it's time to reset
         if (shouldReset(tracking.lastReset)) {
@@ -195,15 +207,19 @@ client.on(Events.MessageCreate, async (message) => {
         
         // Handle commands first
         if (content === '!ping') {
+            console.log(`🏓 Ping command received from ${userName}`);
             await message.reply('🏓 Pong! Bot is active in this channel!');
             return;
         } else if (content === '!help') {
+            console.log(`📚 Help command received from ${userName}`);
             await message.reply('📚 **Available Commands:**\n• `!ping` - Test if bot is responding\n• `!help` - Show this help message\n• `!stats` - Show current monitoring stats\n• `/informalbot start` - Activate bot for this channel\n• `/informalbot stop` - Deactivate bot for this channel\n• `/informalbot status` - Check bot status');
             return;
         } else if (content === '!status') {
+            console.log(`📊 Status command received from ${userName}`);
             await message.reply('✅ Bot is currently **ACTIVE** and monitoring this channel!');
             return;
         } else if (content === '!stats') {
+            console.log(`📈 Stats command received from ${userName}`);
             const tracking = channelTracking.get(message.channelId);
             if (tracking) {
                 const timeUntilReset = getTimeUntilReset(tracking.lastReset);
@@ -224,9 +240,12 @@ client.on(Events.MessageCreate, async (message) => {
             return;
         }
         
+        console.log(`🔍 Message is not a command, checking if it's "+"`);
+        
         // Handle registration logic for non-command messages
         // Check if user already sent a message this hour
         if (tracking.users.has(userId)) {
+            console.log(`❌ User ${userName} already registered this hour`);
             // Delete the message if it's not "+"
             if (messageContent !== '+') {
                 try {
@@ -257,6 +276,7 @@ client.on(Events.MessageCreate, async (message) => {
         
         // Check if we've reached the 10 person limit
         if (tracking.users.size >= 10) {
+            console.log(`🚫 Channel is full (${tracking.users.size}/10)`);
             // Delete the message if it's not "+"
             if (messageContent !== '+') {
                 try {
@@ -290,6 +310,7 @@ client.on(Events.MessageCreate, async (message) => {
         
         // Check if message is exactly "+" (registration)
         if (messageContent !== '+') {
+            console.log(`⚠️ Invalid message: "${messageContent}" - not "+"`);
             // Delete the invalid message
             try {
                 await message.delete();
@@ -319,12 +340,14 @@ client.on(Events.MessageCreate, async (message) => {
         }
         
         // Valid "+" message - add user to tracking and increment message count
+        console.log(`✅ Valid "+" message received from ${userName}`);
         tracking.users.add(userId);
         tracking.usernames.set(userId, userName);
         tracking.messageCount++;
 
         // Check if this was the 10th registration
         if (tracking.users.size === 10) {
+            console.log(`🎉 10th registration reached by ${userName}`);
             // Create list of all registered people
             const registeredList = Array.from(tracking.usernames.values()).map((name, index) => `${index + 1}. ${name}`).join('\n');
             
@@ -333,10 +356,12 @@ client.on(Events.MessageCreate, async (message) => {
                 await message.channel.send({
                     content: `📋 **All Registered People (10/10):**\n${registeredList}\n\n⏰ **Next reset:** ${getTimeUntilReset(tracking.lastReset)}`
                 });
+                console.log(`📋 Final registration list sent`);
             } catch (error) {
                 console.error(`❌ Failed to send final registration list: ${error.message}`);
             }
         } else {
+            console.log(`✅ Regular registration confirmation sent to ${userName}`);
             // Send regular confirmation
             try {
                 await message.channel.send({
