@@ -79,6 +79,15 @@ client.once('ready', async () => {
     console.log(`🔍 Bot ID: ${client.user.id}`);
     console.log(`🔍 Bot intents: ${client.options.intents.toArray().join(', ')}`);
     console.log(`🔍 Bot permissions: ${client.user.flags?.toArray().join(', ') || 'None'}`);
+    console.log(`🔍 Bot is ready and connected to Discord`);
+    
+    // Test if we can see guilds
+    console.log(`🔍 Connected to ${client.guilds.cache.size} guild(s):`);
+    client.guilds.cache.forEach(guild => {
+        console.log(`  - ${guild.name} (${guild.id})`);
+        console.log(`    Channels: ${guild.channels.cache.size}`);
+        console.log(`    Members: ${guild.memberCount}`);
+    });
     
     try {
         const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -108,6 +117,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
             case 'start':
                 activeChannels.add(channelId);
                 initializeChannelTracking(channelId);
+                
+                // Test if we can send a message to this channel
+                try {
+                    const testChannel = client.channels.cache.get(channelId);
+                    if (testChannel) {
+                        console.log(`🔍 Channel found: ${testChannel.name} (${testChannel.id})`);
+                        console.log(`🔍 Channel type: ${testChannel.type}`);
+                        console.log(`🔍 Channel permissions: ${testChannel.permissionsFor(client.user)?.toArray().join(', ') || 'None'}`);
+                    } else {
+                        console.log(`❌ Channel not found in cache: ${channelId}`);
+                    }
+                } catch (error) {
+                    console.error(`❌ Error checking channel: ${error.message}`);
+                }
+                
                 await interaction.reply({
                     content: `🤖 **InformalBot activated for #${channelName}**\n\n📊 **Message Monitoring System:**\n• Max 10 unique people per hour\n• 1 message per person per hour\n• Resets every hour on the clock\n\nUse \`!stats\` to see current status!`,
                     ephemeral: false
@@ -155,6 +179,28 @@ client.on(Events.InteractionCreate, async (interaction) => {
 // Test basic message event handler
 client.on(Events.MessageCreate, (message) => {
     console.log(`🧪 BASIC TEST: Message from ${message.author.username}: "${message.content}"`);
+});
+
+// Test other events to see if Discord is working
+client.on(Events.GuildCreate, (guild) => {
+    console.log(`🏠 Bot joined guild: ${guild.name}`);
+});
+
+client.on(Events.GuildDelete, (guild) => {
+    console.log(`🚪 Bot left guild: ${guild.name}`);
+});
+
+client.on(Events.ChannelCreate, (channel) => {
+    console.log(`📝 Channel created: ${channel.name}`);
+});
+
+client.on(Events.ChannelDelete, (channel) => {
+    console.log(`🗑️ Channel deleted: ${channel.name}`);
+});
+
+// Test if we can see any user activity
+client.on(Events.PresenceUpdate, (oldPresence, newPresence) => {
+    console.log(`👤 Presence update: ${newPresence.user?.username} - ${newPresence.status}`);
 });
 
 // Handle messages only in active channels
