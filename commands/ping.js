@@ -1,5 +1,3 @@
-const { SlashCommandBuilder } = require('discord.js');
-
 module.exports = {
   name: 'ping',
   description: 'Test if bot is responding',

@@ -29,6 +29,11 @@ let lastHeartbeat = Date.now();
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 const MAX_HEARTBEAT_DELAY = 120000; // 2 minutes
 
+// Connection monitoring variables
+let connectionAttempts = 0;
+const MAX_RECONNECTION_ATTEMPTS = 5;
+const RECONNECTION_DELAY = 10000; // 10 seconds
+
 // Heartbeat function to ensure bot is responsive
 function sendHeartbeat() {
     const now = Date.now();
@@ -250,15 +255,6 @@ const commands = [
         )
 ];
 
-// Function to get current GMT+6 time
-function getCurrentGMT6Time() {
-    const now = new Date();
-    // Convert to GMT+6 (Bangladesh Standard Time)
-    const gmt6Offset = 6 * 60; // 6 hours in minutes
-    const gmt6Time = new Date(now.getTime() + (gmt6Offset * 60 * 1000));
-    return gmt6Time.toISOString();
-}
-
 // Function to get current GMT+6 time as Date object
 function getCurrentGMT6Date() {
     const now = new Date();
@@ -363,12 +359,6 @@ function getNextRegistrationCloseTime(lastReset) {
     const displayHours = hours % 12 || 12;
     
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-}
-
-// Function to get current GMT+6 time string for logging
-function getCurrentGMT6TimeString() {
-    const now = getCurrentGMT6Date();
-    return now.toISOString();
 }
 
 // Function to get current GMT+6 time in readable format
@@ -575,7 +565,7 @@ client.once('ready', async () => {
                     console.log(`📢 Sending startup message to #${textChannel.name} in ${guild.name}`);
                     
                     await textChannel.send({
-                        content: `# 🎯 Salamanca Informal Registration\n\n🚀 **Bot Startup Complete!**\n\n🎯 **Calling all ${getTurferRankMention(guild)}!**\n\n📝 **Informal Event Registration System is READY!**\n\n⏰ **Current GMT+6 Time:** ${getCurrentGMT6Readable()}\n📊 **System Status:** Online and Monitoring\n🔄 **Reset Schedule:** Every hour at 00:01 (GMT+6)\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n📝 **Registration Commands:**\n• \`+\` - Register for the event\n• \`-\` - Cancel your registration\n\nUse \`/informalbot start\` to activate registration in this channel!\n\n---\n**Made by Zircon**`
+                        content: `# 🎯 Salamanca Informal Registration\n\n🚀 **Bot Startup Complete!**\n\n🎯 **Calling all ${getTurferRankMention(guild)}!**\n\n📝 **Informal Event Registration System is READY!**\n\n⏰ **Current GMT+6 Time:** ${getCurrentGMT6Readable()}\n📊 **System Status:** Online and Monitoring\n🔄 **Reset Schedule:** Every hour at XX:30 (GMT+6)\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n📝 **Registration Commands:**\n• \`+\` - Register for the event\n• \`-\` - Cancel your registration\n\nUse \`/informalbot start\` to activate registration in this channel!\n\n---\n**Made by Zircon**`
                     });
                     
                     console.log(`✅ Startup message sent to #${textChannel.name}`);
@@ -654,10 +644,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 
                 let statusMessage;
                 if (isOpen) {
-                    statusMessage = `📝 **Informal Event Registration is NOW OPEN!**\n\n⏰ **Registration Closes:** ${getNextRegistrationCloseTime(tracking.lastReset)} (in ${Math.max(0, 45 - new Date().getMinutes())} minutes)`;
+                    const now = getCurrentGMT6Date();
+                    const minutesUntilClose = Math.max(0, 45 - now.getMinutes());
+                    statusMessage = `📝 **Informal Event Registration is NOW OPEN!**\n\n⏰ **Registration Closes:** ${getCurrentHourCloseTime(tracking.lastReset)} (in ${minutesUntilClose} minutes)`;
                 } else {
+                    const now = getCurrentGMT6Date();
+                    const minutesUntilOpen = Math.max(0, 30 - now.getMinutes());
                     const nextOpen = getNextRegistrationOpenTime(tracking.lastReset);
-                    statusMessage = `⏰ **Registration is currently CLOSED**\n\n🕐 **Next Registration Opens:** ${nextOpen} (in ${Math.max(0, 30 - new Date().getMinutes())} minutes)`;
+                    statusMessage = `⏰ **Registration is currently CLOSED**\n\n🕐 **Next Registration Opens:** ${nextOpen} (in ${minutesUntilOpen} minutes)`;
                 }
                 
                 await interaction.reply({
