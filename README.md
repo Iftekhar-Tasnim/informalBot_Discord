@@ -405,7 +405,7 @@ informalBot/
 6. **Monitor**: Use `!stats` to see current status
 
 The bot will automatically:
-- ✅ Reset registrations every hour at 00:01 (GMT+6)
+- ✅ Reset registrations every hour at XX:30 (GMT+6)
 - ✅ Tag and notify 5 | ᴛᴜʀғᴇʀ rank people
 - ✅ Manage up to 10 registrations per hour
 - ✅ Provide clear instructions in all messages
@@ -433,7 +433,7 @@ The bot will automatically:
 
 This bot has been successfully deployed and is actively managing Informal Event registrations with:
 - **24/7 Uptime** - Never stops running
-- **Military Precision** - Exact 00:01 hourly resets
+- **Military Precision** - Exact XX:30 hourly resets
 - **User Satisfaction** - Clear instructions and feedback
 - **Admin Ease** - Simple slash commands for management
 

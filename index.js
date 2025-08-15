@@ -94,7 +94,7 @@ function checkScheduledEvents() {
                             }
                             
                             channel.send({
-                                content: `# 🎯 Salamanca Informal Registration\n\n🟢 **Registration is NOW OPEN!**\n\n⏰ **Opening Time:** GMT+6 ${getCurrentGMT6Readable()}\n📊 **Previous Hour:** ${oldCount}/10 people registered\n✅ **Channel is now open for new registrations!**\n\n🎯 **Calling all ${getTurferRankMention(channel.guild)}!**\n\n📝 **Next Informal Event Registration is NOW OPEN!**\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n⏰ **Registration Schedule for This Hour:**\n• **🟢 Opens:** ${getCurrentGMT6Readable().split(' ')[1]} (NOW)\n• **🔴 Closes:** ${getCurrentHourCloseTime(tracking.lastReset)} (in 15 minutes)\n• **🔄 Next Reset:** ${getNextResetTime(tracking.lastReset)} (in 1 hour)\n\n📋 **Current Registration List:**\n${emptyList.join('\n')}\n\n---\n**Made by Zircon**`
+                                content: `# 🎯 Salamanca Informal Registration\n\n🟢 **Registration is NOW OPEN!**\n\n⏰ **Opening Time:** GMT+6 ${getCurrentHourOpenTime(tracking.lastReset)}\n📊 **Previous Hour:** ${oldCount}/10 people registered\n✅ **Channel is now open for new registrations!**\n\n🎯 **Calling all ${getTurferRankMention(channel.guild)}!**\n\n📝 **Next Informal Event Registration is NOW OPEN!**\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n⏰ **Registration Schedule for This Hour:**\n• **🟢 Opens:** ${getCurrentHourOpenTime(tracking.lastReset)} (NOW)\n• **🔴 Closes:** ${getCurrentHourCloseTime(tracking.lastReset)} (in 15 minutes)\n• **🔄 Next Reset:** ${getNextResetTime(tracking.lastReset)} (in 1 hour)\n\n📋 **Current Registration List:**\n${emptyList.join('\n')}\n\n---\n**Made by Zircon**`
                             }).then(() => {
                                 console.log(`✅ Registration opening notification sent successfully to #${channel.name}`);
                             }).catch(error => {
@@ -321,6 +321,23 @@ function getNextRegistrationOpenTime(lastReset) {
     // Format the time as HH:MM AM/PM
     const hours = nextOpen.getHours();
     const minutes = nextOpen.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+}
+
+// Function to get current hour's registration opening time (using GMT+6 time)
+function getCurrentHourOpenTime(lastReset) {
+    const lastResetTime = new Date(lastReset);
+    
+    // Calculate the current hour boundary at 00:30
+    const currentOpen = new Date(lastResetTime);
+    currentOpen.setMinutes(30, 0, 0); // Current hour at 00:30
+    
+    // Format the time as HH:MM AM/PM
+    const hours = currentOpen.getHours();
+    const minutes = currentOpen.getMinutes();
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const displayHours = hours % 12 || 12;
     
@@ -609,7 +626,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                             }
                             
                             channel.send({
-                                content: `# 🎯 Salamanca Informal Registration\n\n🟢 **Registration is NOW OPEN!**\n\n⏰ **Opening Time:** GMT+6 ${getCurrentGMT6Readable()}\n📊 **Previous Hour:** 0/10 people registered\n✅ **Channel is now open for new registrations!**\n\n🎯 **Calling all ${getTurferRankMention(interaction.guild)}!**\n\n📝 **Next Informal Event Registration is NOW OPEN!**\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n⏰ **Registration Schedule for This Hour:**\n• **🟢 Opens:** ${getCurrentGMT6Readable().split(' ')[1]} (NOW)\n• **🔴 Closes:** ${getCurrentHourCloseTime(tracking.lastReset)} (in 15 minutes)\n• **🔄 Next Reset:** ${getNextResetTime(tracking.lastReset)} (in 1 hour)\n\n📋 **Current Registration List:**\n${emptyList.join('\n')}\n\n---\n**Made by Zircon**`
+                                content: `# 🎯 Salamanca Informal Registration\n\n🟢 **Registration is NOW OPEN!**\n\n⏰ **Opening Time:** GMT+6 ${getCurrentHourOpenTime(tracking.lastReset)}\n📊 **Previous Hour:** 0/10 people registered\n✅ **Channel is now open for new registrations!**\n\n🎯 **Calling all ${getTurferRankMention(interaction.guild)}!**\n\n📝 **Next Informal Event Registration is NOW OPEN!**\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n⏰ **Registration Schedule for This Hour:**\n• **🟢 Opens:** ${getCurrentHourOpenTime(tracking.lastReset)} (NOW)\n• **🔴 Closes:** ${getCurrentHourCloseTime(tracking.lastReset)} (in 15 minutes)\n• **🔄 Next Reset:** ${getNextResetTime(tracking.lastReset)} (in 1 hour)\n\n📋 **Current Registration List:**\n${emptyList.join('\n')}\n\n---\n**Made by Zircon**`
                             }).then(() => {
                                 console.log(`✅ Immediate registration opening notification sent to #${channel.name}`);
                             }).catch(error => {
@@ -788,7 +805,7 @@ client.on(Events.MessageCreate, async (message) => {
             // Notify channel about the reset
             try {
                 await message.channel.send({
-                    content: `# 🎯 Salamanca Informal Registration\n\n🔄 **Hourly Reset Complete!**\n\n⏰ **Reset Time:** GMT+6 ${getCurrentGMT6Readable()}\n📊 **Previous Hour:** ${oldCount}/10 people registered\n✅ **Channel is now open for new registrations!**\n\n🎯 **Calling all ${getTurferRankMention(message.guild)}!**\n\n📝 **Next Informal Event Registration is NOW OPEN!**\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n⏰ **Registration Schedule for This Hour:**\n• **🟢 Opens:** ${getCurrentGMT6Readable().split(' ')[1]} (NOW)\n• **🔴 Closes:** ${getCurrentHourCloseTime(tracking.lastReset)} (in 15 minutes)\n• **🔄 Next Reset:** ${getNextResetTime(tracking.lastReset)} (in 1 hour)\n\n📋 **Current Registration List:**\n${emptyList.join('\n')}\n\n---\n**Made by Zircon**`
+                    content: `# 🎯 Salamanca Informal Registration\n\n🔄 **Hourly Reset Complete!**\n\n⏰ **Reset Time:** GMT+6 ${getCurrentHourOpenTime(tracking.lastReset)}\n📊 **Previous Hour:** ${oldCount}/10 people registered\n✅ **Channel is now open for new registrations!**\n\n🎯 **Calling all ${getTurferRankMention(message.guild)}!**\n\n📝 **Next Informal Event Registration is NOW OPEN!**\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n⏰ **Registration Schedule for This Hour:**\n• **🟢 Opens:** ${getCurrentHourOpenTime(tracking.lastReset)} (NOW)\n• **🔴 Closes:** ${getCurrentHourCloseTime(tracking.lastReset)} (in 15 minutes)\n• **🔄 Next Reset:** ${getNextResetTime(tracking.lastReset)} (in 1 hour)\n\n📋 **Current Registration List:**\n${emptyList.join('\n')}\n\n---\n**Made by Zircon**`
                 });
             } catch (error) {
                 console.error(`❌ Failed to send reset notification: ${error.message}`);
