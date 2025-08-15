@@ -37,7 +37,8 @@ A sophisticated Discord bot designed specifically for **5 | ᴛᴜʀғᴇʀ rank
 
 ### 🎯 **Core Functionality**
 - **Hourly Registration System**: Tracks up to 10 unique users per hour (GMT+6 timezone)
-- **Precise Reset Timing**: Automatically resets at exactly **00:01** of every hour
+- **Precise Reset Timing**: Automatically resets at exactly **XX:30** of every hour
+- **Registration Window**: Open from **XX:30 to XX:45** (15 minutes per hour)
 - **Smart Role Tagging**: Automatically mentions and notifies 5 | ᴛᴜʀғᴇʀ rank people
 - **Dual Command System**: `+` to register, `-` to cancel registration
 - **Real-time Updates**: Live registration list with empty slot indicators
@@ -48,6 +49,8 @@ A sophisticated Discord bot designed specifically for **5 | ᴛᴜʀғᴇʀ rank
 - **Health Monitoring**: Built-in heartbeat and status monitoring
 - **Timezone Sync**: All times synchronized with GMT+6 (Bangladesh Standard Time)
 - **Nickname Support**: Shows both Discord username and server nickname
+- **Smart Activation**: Automatically detects if registration should be open when bot is activated
+- **Immediate Registration**: Allows registration right away if activated during open periods
 
 ### 📱 **User Experience**
 - **Clear Instructions**: Every message includes "Press + for registration, - for cancellation"
@@ -160,17 +163,19 @@ forever start index.js
 - **`/informalbot status`** - Check detailed bot status
 
 ### 📚 **Text Commands**
-- **`!ping`** - Test bot response
-- **`!help`** - Show available commands
+- **`!ping`** - Test bot response and show latency
+- **`!help`** - Show available commands and registration schedule
 - **`!stats`** - Show detailed monitoring stats with embed
 - **`!status`** - Simple status check
+- **`!testevents`** - Admin command to test timing functionality
 
 ## 🕐 **Reset System**
 
 ### ⏰ **Precise Timing**
-- **Reset Time**: Exactly **00:01** of every hour (GMT+6)
-- **Registration Window**: Open from 00:01 to 59:59 of each hour
+- **Reset Time**: Exactly **XX:30** of every hour (GMT+6)
+- **Registration Window**: Open from **XX:30 to XX:45** (15 minutes per hour)
 - **Automatic**: No manual intervention required
+- **Smart Detection**: Bot automatically knows when registration should be open
 
 ### 🔄 **Reset Process**
 1. **Automatic Detection**: Bot checks every minute for reset time
@@ -178,6 +183,7 @@ forever start index.js
 3. **Notification**: Sends reset message with empty registration list
 4. **Role Mention**: Tags all 5 | ᴛᴜʀғᴇʀ rank people
 5. **Instructions**: Includes clear + and - instructions
+6. **Schedule Display**: Shows complete timing information for the current hour
 
 ## 🎯 **Role Tagging System**
 
@@ -206,7 +212,8 @@ The bot automatically finds and mentions the appropriate role:
 #### **1. Startup Messages**
 - **Bot Startup**: Sent to all guilds when bot connects
 - **Bot Activation**: Sent when `/informalbot start` is used
-- **Includes**: Role mentions, instructions, and system status
+- **Immediate Status**: Shows current registration status when activated
+- **Includes**: Role mentions, instructions, system status, and timing information
 
 #### **2. Registration Messages**
 - **Success**: Confirmation with updated registration list
