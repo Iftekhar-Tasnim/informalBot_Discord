@@ -1,13 +1,14 @@
-# InformalBot - Discord Bot
+# Salamanca Informal Bot - Discord Bot
 
 A Discord bot that monitors channels and manages user registrations with automatic restart capabilities.
 
 ## Features
 
-- **Channel Monitoring**: Tracks up to 10 unique users per hour
+- **Channel Monitoring**: Tracks up to 10 unique users per hour (GMT+6 timezone)
 - **Auto-Restart**: Never stops running automatically
 - **Error Recovery**: Handles crashes and connection issues gracefully
 - **Health Monitoring**: Built-in heartbeat and status monitoring
+- **Timezone Sync**: All times synchronized with GMT+6 (Bangladesh Standard Time)
 
 ## Installation
 

@@ -1,6 +1,6 @@
-# 🚂 Railway Deployment Guide for InformalBot
+# 🚂 Railway Deployment Guide for Salamanca Informal Bot
 
-This guide will help you deploy your Discord bot to Railway and ensure it stays running 24/7.
+This guide will help you deploy your Salamanca Informal Bot to Railway and ensure it stays running 24/7.
 
 ## 🚀 Quick Deploy to Railway
 

@@ -21,13 +21,28 @@ console.log(`🔧 Service: ${RAILWAY_SERVICE_NAME}`);
 const http = require('http');
 const server = http.createServer((req, res) => {
     if (req.url === '/health') {
+        const now = new Date();
+        const gmt6Time = new Date(now.getTime() + (6 * 60 * 60 * 1000)); // GMT+6
+        const gmt6TimeString = gmt6Time.toLocaleString('en-US', { 
+            timeZone: 'Asia/Dhaka',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
             status: 'healthy',
             service: RAILWAY_SERVICE_NAME,
             environment: RAILWAY_ENVIRONMENT,
             uptime: process.uptime(),
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            gmt6_time: gmt6TimeString,
+            timezone: 'GMT+6 (Bangladesh Standard Time)'
         }));
     } else {
         res.writeHead(404);
@@ -79,7 +94,20 @@ process.on('SIGINT', () => {
 // Railway environment monitoring
 setInterval(() => {
     const memUsage = process.memoryUsage();
-    console.log(`💓 Railway Bot Status - Uptime: ${Math.floor(process.uptime())}s, Memory: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`);
+    const now = new Date();
+    const gmt6Time = new Date(now.getTime() + (6 * 60 * 60 * 1000)); // GMT+6
+    const gmt6TimeString = gmt6Time.toLocaleString('en-US', { 
+        timeZone: 'Asia/Dhaka',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+    
+    console.log(`💓 Railway Bot Status - Uptime: ${Math.floor(process.uptime())}s, Memory: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB, GMT+6: ${gmt6TimeString}`);
     
     // Railway will automatically restart if memory usage is too high
     if (memUsage.heapUsed > 500 * 1024 * 1024) { // 500MB
@@ -88,13 +116,13 @@ setInterval(() => {
 }, 60000); // Every minute
 
 // Start the main bot
-console.log('🚀 Starting InformalBot for Railway...');
+console.log('🚀 Starting Salamanca Informal Bot for Railway...');
 console.log('📡 Connecting to Discord...');
 
 // Import and start the main bot
 try {
     require('./index.js');
-    console.log('✅ Bot started successfully on Railway');
+    console.log('✅ Salamanca Informal Bot started successfully on Railway');
 } catch (error) {
     console.error('❌ Failed to start bot:', error.message);
     handleRailwayRestart();
