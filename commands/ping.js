@@ -1,12 +1,11 @@
 const { SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-  data: new SlashCommandBuilder()
-    .setName('ping')
-    .setDescription('Replies with Pong!'),
-  async execute(interaction) {
-    const sent = await interaction.reply({ content: 'Pinging...', fetchReply: true });
-    const latency = sent.createdTimestamp - interaction.createdTimestamp;
-    await interaction.editReply(`Pong! Round-trip latency: ${latency}ms`);
+  name: 'ping',
+  description: 'Test if bot is responding',
+  async execute(message, args) {
+    const sent = await message.reply('🏓 Pinging...');
+    const latency = sent.createdTimestamp - message.createdTimestamp;
+    await sent.edit(`# 🎯 Salamanca Informal Registration\n\n🏓 **Pong!**\n\n⏱️ **Round-trip latency:** ${latency}ms\n✅ **Bot is responding and active!**\n\n---\n**Made by Zircon**`);
   }
 };

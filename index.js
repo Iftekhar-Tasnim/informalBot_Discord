@@ -45,26 +45,27 @@ function sendHeartbeat() {
 // Start heartbeat monitoring
 setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
 
-// Scheduled reset check - runs every minute to ensure precise reset timing
-function checkScheduledResets() {
+// Scheduled time check - runs every minute to ensure precise timing
+function checkScheduledEvents() {
     const now = getCurrentGMT6Date();
     const currentMinute = now.getMinutes();
     
-    // Check if it's exactly 00:01 of any hour
-    if (currentMinute === 1) {
-        console.log(`🕐 Scheduled reset check at GMT+6: ${getCurrentGMT6Readable()}`);
+    // Check if it's exactly 00:30 of any hour (registration opens)
+    if (currentMinute === 30) {
+        console.log(`🕐 Registration opening check at GMT+6: ${getCurrentGMT6Readable()}`);
         console.log(`🔍 Active channels: ${activeChannels.size}`);
         
-        // Check all active channels for reset
+        // Check all active channels for registration opening
         activeChannels.forEach(channelId => {
-            console.log(`🔍 Checking channel ${channelId} for reset...`);
+            console.log(`🔍 Checking channel ${channelId} for registration opening...`);
             
             const tracking = channelTracking.get(channelId);
             if (tracking) {
                 console.log(`📊 Channel ${channelId} tracking found. Users: ${tracking.users.size}, Last reset: ${tracking.lastReset}`);
                 
+                // Check if we need to reset and open registration
                 if (shouldReset(tracking.lastReset)) {
-                    console.log(`🔄 Scheduled reset triggered for channel ${channelId}`);
+                    console.log(`🔄 Registration reset and opening triggered for channel ${channelId}`);
                     
                     // Perform the reset
                     const oldCount = tracking.users.size;
@@ -73,13 +74,13 @@ function checkScheduledResets() {
                     tracking.messageCount = 0;
                     tracking.lastReset = now;
                     
-                    console.log(`🔄 Scheduled reset completed for channel ${channelId}. Cleared ${oldCount} registrations.`);
+                    console.log(`🔄 Registration reset completed for channel ${channelId}. Cleared ${oldCount} registrations.`);
                     
-                    // Try to send reset notification to the channel
+                    // Send registration opening notification to the channel
                     try {
                         const channel = client.channels.cache.get(channelId);
                         if (channel) {
-                            console.log(`📢 Sending reset notification to #${channel.name}`);
+                            console.log(`📢 Sending registration opening notification to #${channel.name}`);
                             
                             // Create empty registration list
                             const emptyList = [];
@@ -88,9 +89,9 @@ function checkScheduledResets() {
                             }
                             
                             channel.send({
-                                content: `# 🎯 Salamanca Informal Registration\n\n🕐 **Scheduled Hourly Reset Complete!**\n\n⏰ **Reset Time:** GMT+6 ${getCurrentGMT6Readable()}\n📊 **Previous Hour:** ${oldCount}/10 people registered\n✅ **Channel is now open for new registrations!**\n\n🎯 **Calling all ${getTurferRankMention(channel.guild)}!**\n\n📝 **Next Informal Event Registration is NOW OPEN!**\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n⏰ **Next Reset:** ${getNextResetTime(tracking.lastReset)}\n\n📋 **Current Registration List:**\n${emptyList.join('\n')}\n\n---\n**Made by Zircon**`
+                                content: `# 🎯 Salamanca Informal Registration\n\n🕐 **Registration is NOW OPEN!**\n\n⏰ **Opening Time:** GMT+6 ${getCurrentGMT6Readable()}\n📊 **Previous Hour:** ${oldCount}/10 people registered\n✅ **Channel is now open for new registrations!**\n\n🎯 **Calling all ${getTurferRankMention(channel.guild)}!**\n\n📝 **Next Informal Event Registration is NOW OPEN!**\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n⏰ **Registration Closes:** ${getNextRegistrationCloseTime(tracking.lastReset)}\n\n📋 **Current Registration List:**\n${emptyList.join('\n')}\n\n---\n**Made by Zircon**`
                             }).then(() => {
-                                console.log(`✅ Reset notification sent successfully to #${channel.name}`);
+                                console.log(`✅ Registration opening notification sent successfully to #${channel.name}`);
                             }).catch(error => {
                                 console.error(`❌ Failed to send message to #${channel.name}: ${error.message}`);
                             });
@@ -98,10 +99,66 @@ function checkScheduledResets() {
                             console.log(`❌ Channel ${channelId} not found in cache`);
                         }
                     } catch (error) {
-                        console.error(`❌ Failed to send scheduled reset notification: ${error.message}`);
+                        console.error(`❌ Failed to send registration opening notification: ${error.message}`);
                     }
                 } else {
-                    console.log(`⏰ Channel ${channelId} not ready for reset yet`);
+                    console.log(`⏰ Channel ${channelId} not ready for registration opening yet`);
+                }
+            } else {
+                console.log(`❌ No tracking found for channel ${channelId}`);
+            }
+        });
+    }
+    
+    // Check if it's exactly 00:45 of any hour (registration closes)
+    if (currentMinute === 45) {
+        console.log(`🕐 Registration closing check at GMT+6: ${getCurrentGMT6Readable()}`);
+        console.log(`🔍 Active channels: ${activeChannels.size}`);
+        
+        // Check all active channels for registration closing
+        activeChannels.forEach(channelId => {
+            console.log(`🔍 Checking channel ${channelId} for registration closing...`);
+            
+            const tracking = channelTracking.get(channelId);
+            if (tracking) {
+                console.log(`📊 Channel ${channelId} tracking found. Users: ${tracking.users.size}, Last reset: ${tracking.lastReset}`);
+                
+                // Send registration closing notification to the channel
+                try {
+                    const channel = client.channels.cache.get(channelId);
+                    if (channel) {
+                        console.log(`📢 Sending registration closing notification to #${channel.name}`);
+                        
+                        // Create current registration list
+                        const registeredList = [];
+                        const emptySlots = [];
+                        
+                        // Fill in registered names
+                        const currentUsers = Array.from(tracking.users);
+                        for (let i = 1; i <= 10; i++) {
+                            if (i <= currentUsers.length) {
+                                const currentUserId = currentUsers[i - 1];
+                                const username = tracking.usernames.get(currentUserId);
+                                registeredList.push(`${i}. ${username}`);
+                            } else {
+                                emptySlots.push(`${i}. [Empty Slot]`);
+                            }
+                        }
+                        
+                        const fullList = [...registeredList, ...emptySlots];
+                        
+                        channel.send({
+                            content: `# 🎯 Salamanca Informal Registration\n\n🚫 **Registration is NOW CLOSED!**\n\n⏰ **Closing Time:** GMT+6 ${getCurrentGMT6Readable()}\n📊 **Current Status:** ${tracking.users.size}/10 people registered\n❌ **No more registrations accepted until next hour**\n\n📋 **Final Registration List:**\n${fullList.join('\n')}\n\n⏰ **Next Registration Opens:** ${getNextRegistrationOpenTime(tracking.lastReset)}\n\n---\n**Made by Zircon**`
+                        }).then(() => {
+                            console.log(`✅ Registration closing notification sent successfully to #${channel.name}`);
+                        }).catch(error => {
+                            console.error(`❌ Failed to send message to #${channel.name}: ${error.message}`);
+                        });
+                    } else {
+                        console.log(`❌ Channel ${channelId} not found in cache`);
+                    }
+                } catch (error) {
+                    console.error(`❌ Failed to send registration closing notification: ${error.message}`);
                 }
             } else {
                 console.log(`❌ No tracking found for channel ${channelId}`);
@@ -110,17 +167,17 @@ function checkScheduledResets() {
     }
 }
 
-// Start scheduled reset monitoring (every minute)
-setInterval(checkScheduledResets, 60000); // 60 seconds = 1 minute
+// Start scheduled event monitoring (every minute)
+setInterval(checkScheduledEvents, 60000); // 60 seconds = 1 minute
 
-// Test function to manually trigger reset (for debugging)
-function testScheduledReset() {
-    console.log('🧪 Testing scheduled reset function...');
-    checkScheduledResets();
+// Test function to manually trigger events (for debugging)
+function testScheduledEvents() {
+    console.log('🧪 Testing scheduled events function...');
+    checkScheduledEvents();
 }
 
 // Export test function for manual testing
-global.testReset = testScheduledReset;
+global.testEvents = testScheduledEvents;
 
 // Graceful shutdown handling
 process.on('SIGINT', () => {
@@ -148,6 +205,27 @@ async function gracefulShutdown() {
 }
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+
+// Command collection for prefix commands
+const prefixCommands = new Collection();
+
+// Load prefix commands from commands folder
+const fs = require('fs');
+const path = require('path');
+
+try {
+    const commandFiles = fs.readdirSync(path.join(__dirname, 'commands')).filter(file => file.endsWith('.js'));
+    
+    for (const file of commandFiles) {
+        const command = require(path.join(__dirname, 'commands', file));
+        if (command.name) {
+            prefixCommands.set(command.name, command);
+            console.log(`✅ Loaded prefix command: ${command.name}`);
+        }
+    }
+} catch (error) {
+    console.error('❌ Error loading prefix commands:', error);
+}
 
 // Store which channels the bot is active in
 const activeChannels = new Set();
@@ -189,8 +267,8 @@ function getCurrentGMT6Date() {
     return new Date(now.getTime() + (gmt6Offset * 60 * 1000));
 }
 
-// Function to check if it's time to reset (every hour at 00:01 using GMT+6)
-// This ensures reset happens exactly at 00:01 of every hour
+// Function to check if it's time to reset (every hour at 00:30 using GMT+6)
+// This ensures reset happens exactly at 00:30 of every hour
 function shouldReset(lastReset) {
     const now = getCurrentGMT6Date();
     const lastResetTime = new Date(lastReset);
@@ -203,15 +281,15 @@ function shouldReset(lastReset) {
     
     // Reset if:
     // 1. It's a new hour (current hour != last reset hour), OR
-    // 2. It's the same hour but we're at 00:01 and last reset was at 00:00
-    // This ensures reset happens exactly at 00:01 of every hour
+    // 2. It's the same hour but we're at 00:30 and last reset was at 00:00
+    // This ensures reset happens exactly at 00:30 of every hour
     if (currentGMT6Hour !== lastResetGMT6Hour) {
         return true;
     }
     
-    // If same hour, check if we're at 00:01 and last reset was at 00:00
+    // If same hour, check if we're at 00:30 and last reset was at 00:00
     if (currentGMT6Hour === lastResetGMT6Hour && 
-        currentGMT6Minute === 1 && 
+        currentGMT6Minute === 30 && 
         lastResetGMT6Minute === 0) {
         return true;
     }
@@ -223,13 +301,47 @@ function shouldReset(lastReset) {
 function getNextResetTime(lastReset) {
     const now = getCurrentGMT6Date();
     
-    // Calculate the next hour boundary at 00:01
+    // Calculate the next hour boundary at 00:30
     const nextReset = new Date(now);
-    nextReset.setHours(nextReset.getHours() + 1, 1, 0, 0); // Next hour at 00:01
+    nextReset.setHours(nextReset.getHours() + 1, 30, 0, 0); // Next hour at 00:30
     
     // Format the time as HH:MM AM/PM
     const hours = nextReset.getHours();
     const minutes = nextReset.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+}
+
+// Function to get next registration opening time (using GMT+6 time)
+function getNextRegistrationOpenTime(lastReset) {
+    const now = getCurrentGMT6Date();
+    
+    // Calculate the next hour boundary at 00:30
+    const nextOpen = new Date(now);
+    nextOpen.setHours(nextOpen.getHours() + 1, 30, 0, 0); // Next hour at 00:30
+    
+    // Format the time as HH:MM AM/PM
+    const hours = nextOpen.getHours();
+    const minutes = nextOpen.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+}
+
+// Function to get next registration closing time (using GMT+6 time)
+function getNextRegistrationCloseTime(lastReset) {
+    const now = getCurrentGMT6Date();
+    
+    // Calculate the next hour boundary at 00:45
+    const nextClose = new Date(now);
+    nextClose.setHours(nextClose.getHours() + 1, 45, 0, 0); // Next hour at 00:45
+    
+    // Format the time as HH:MM AM/PM
+    const hours = nextClose.getHours();
+    const minutes = nextClose.getMinutes();
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const displayHours = hours % 12 || 12;
     
@@ -321,17 +433,13 @@ function isRegistrationOpen(lastReset) {
     
     // Registration is open if:
     // 1. We're in the same hour as the last reset, AND
-    // 2. We're past the 00:01 reset time (to avoid edge case at exactly 00:01)
-    // This means: if last reset was at 1:01, registrations are open from 1:01 to 1:59
-    // At 2:01, shouldReset will trigger and clear the data, then registrations open again
+    // 2. We're between 00:30 (opening) and 00:45 (closing)
+    // This means: if last reset was at 1:30, registrations are open from 1:30 to 1:45
+    // At 2:30, shouldReset will trigger and clear the data, then registrations open again
     if (currentGMT6Hour === lastResetGMT6Hour) {
-        // Same hour - check if we're past the reset minute
-        if (currentGMT6Minute > lastResetGMT6Minute) {
+        // Same hour - check if we're in the registration window (30-45 minutes)
+        if (currentGMT6Minute >= 30 && currentGMT6Minute < 45) {
             return true;
-        }
-        // If we're at exactly the reset minute, wait a bit to avoid edge cases
-        if (currentGMT6Minute === lastResetGMT6Minute) {
-            return false;
         }
     }
     
@@ -342,9 +450,9 @@ function isRegistrationOpen(lastReset) {
 function initializeChannelTracking(channelId) {
     const now = getCurrentGMT6Date();
     
-    // Set the initial reset time to the current hour at 00:01
+    // Set the initial reset time to the current hour at 00:30
     const initialResetTime = new Date(now);
-    initialResetTime.setMinutes(1, 0, 0); // Set to 00:01 of current hour
+    initialResetTime.setMinutes(30, 0, 0); // Set to 00:30 of current hour
     
     channelTracking.set(channelId, {
         users: new Set(),
@@ -612,7 +720,7 @@ client.on(Events.MessageCreate, async (message) => {
         if (!isRegistrationOpen(tracking.lastReset)) {
             console.log(`⏰ Registration period closed for channel ${channelId}. Waiting for next hour.`);
             // Delete any non-command messages during closed period
-            if (messageContent !== '!ping' && messageContent !== '!help' && messageContent !== '!status' && messageContent !== '!stats' && messageContent !== '+' && messageContent !== '-') {
+            if (!messageContent.startsWith('!') && messageContent !== '+' && messageContent !== '-') {
                 try {
                     await message.delete();
                 } catch (error) {
@@ -639,32 +747,43 @@ client.on(Events.MessageCreate, async (message) => {
             return;
         }
         
-        // Handle commands first
-        if (content === '!ping') {
-            console.log(`🏓 Ping command received from ${userName}`);
-            await message.reply('🏓 Pong! Bot is active in this channel!');
-            return;
-        } else if (content === '!help') {
-            console.log(`📚 Help command received from ${userName}`);
-            await message.reply(`# 🎯 Salamanca Informal Registration\n\n📚 **Salamanca Informal Bot Commands:**\n• \`!ping\` - Test if bot is responding\n• \`!help\` - Show this help message\n• \`!stats\` - Show current monitoring stats\n• \`/informalbot start\` - Activate bot for this channel\n• \`/informalbot stop\` - Deactivate bot for this channel\n• \`/informalbot status\` - Check bot status\n\n📝 **Registration Commands:**\n• \`+\` - Register for the event\n• \`-\` - Cancel your registration\n\n🔧 **Admin Commands:**\n• \`!testreset\` - Test reset functionality (Admin only)\n\n🎯 **For ${getTurferRankMention(message.guild)} only!**\n\n⏰ **All times are in GMT+6 (Bangladesh Standard Time)**\n\n---\n**Made by Zircon**`);
-            return;
-        } else if (content === '!status') {
+        // Handle prefix commands first
+        if (messageContent.startsWith('!')) {
+            const args = messageContent.slice(1).trim().split(/ +/);
+            const commandName = args.shift().toLowerCase();
+            
+            const command = prefixCommands.get(commandName);
+            if (command) {
+                console.log(`🔧 Executing prefix command: ${commandName} from ${userName}`);
+                try {
+                    await command.execute(message, args);
+                    return;
+                } catch (error) {
+                    console.error(`❌ Error executing command ${commandName}:`, error);
+                    await message.reply('❌ There was an error executing that command!');
+                    return;
+                }
+            }
+        }
+        
+        // Handle built-in commands
+        if (content === '!status') {
             console.log(`📊 Status command received from ${userName}`);
             await message.reply('# 🎯 Salamanca Informal Registration\n\n✅ Bot is currently **ACTIVE** and monitoring this channel!\n\n---\n**Made by Zircon**');
             return;
-        } else if (content === '!testreset') {
-            console.log(`🧪 Test reset command received from ${userName}`);
+        } else if (content === '!testevents') {
+            console.log(`🧪 Test events command received from ${userName}`);
             
             // Check if user has admin permissions
             if (message.member && message.member.permissions.has('ADMINISTRATOR')) {
-                console.log(`🧪 Admin ${userName} testing reset functionality...`);
+                console.log(`🧪 Admin ${userName} testing timing functionality...`);
                 
-                // Manually trigger the scheduled reset check
-                checkScheduledResets();
+                // Manually trigger the scheduled events check
+                checkScheduledEvents();
                 
-                await message.reply('# 🎯 Salamanca Informal Registration\n\n🧪 **Test Reset Triggered!**\n\n✅ Reset function has been manually executed.\n📊 Check console logs for detailed information.\n\n---\n**Made by Zircon**');
+                await message.reply('# 🎯 Salamanca Informal Registration\n\n🧪 **Test Events Triggered!**\n\n✅ Timing function has been manually executed.\n📊 Check console logs for detailed information.\n\n---\n**Made by Zircon**');
             } else {
-                await message.reply('# 🎯 Salamanca Informal Registration\n\n❌ **Access Denied!**\n\n🔒 This command requires Administrator permissions.\n\n---\n**Made by Zircon**');
+                await message.reply(`# 🎯 Salamanca Informal Registration\n\n❌ **Access Denied!**\n\n🔒 This command requires Administrator permissions.\n\n---\n**Made by Zircon**`);
             }
             return;
         } else if (content === '!stats') {
@@ -715,7 +834,7 @@ client.on(Events.MessageCreate, async (message) => {
             return;
         }
         
-                console.log(`🔍 Message is not a command, checking if it's "+" or "-"`);
+        console.log(`🔍 Message is not a command, checking if it's "+" or "-"`);
         
         // Check if message is exactly "+" (registration) or "-" (cancellation) FIRST
         if (messageContent === '+') {
