@@ -166,6 +166,20 @@ function getCurrentGMT6Readable() {
     });
 }
 
+// Function to get user display name (username + nickname if available)
+function getUserDisplayName(message) {
+    const userName = message.author.username;
+    try {
+        const member = message.member;
+        if (member && member.nickname) {
+            return `${userName} (${member.nickname})`;
+        }
+    } catch (error) {
+        console.log(`Could not get nickname for ${userName}: ${error.message}`);
+    }
+    return userName;
+}
+
 // Function to check if registrations are currently allowed
 function isRegistrationOpen(lastReset) {
     const now = getCurrentGMT6Date();
@@ -279,7 +293,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 }
                 
                 await interaction.reply({
-                    content: `🤖 **Salamanca Informal Bot activated for #${channelName}**\n\n📊 **Message Monitoring System:**\n• Max 10 unique people per hour\n• 1 message per person per hour\n• Resets every hour on the clock (GMT+6)\n\nUse \`!stats\` to see current status!`,
+                    content: `# 🎯 Salamanca Informal Registration\n\n🤖 **Salamanca Informal Bot activated for #${channelName}**\n\n📊 **Message Monitoring System:**\n• Max 10 unique people per hour\n• 1 message per person per hour\n• Resets every hour on the clock (GMT+6)\n\nUse \`!stats\` to see current status!\n\n---\n**Made by Zircon**`,
                     ephemeral: false
                 });
                 console.log(`✅ Salamanca Informal Bot activated for channel: ${channelName} (${channelId})`);
@@ -289,7 +303,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 activeChannels.delete(channelId);
                 channelTracking.delete(channelId);
                 await interaction.reply({
-                    content: `🛑 **Salamanca Informal Bot deactivated for #${channelName}**\n\nBot will no longer monitor this channel.`,
+                    content: `# 🎯 Salamanca Informal Registration\n\n🛑 **Salamanca Informal Bot deactivated for #${channelName}**\n\nBot will no longer monitor this channel.\n\n---\n**Made by Zircon**`,
                     ephemeral: false
                 });
                 console.log(`❌ Salamanca Informal Bot deactivated for channel: ${channelName} (${channelId})`);
@@ -326,18 +340,18 @@ client.on(Events.InteractionCreate, async (interaction) => {
                         const fullList = [...registeredList, ...emptySlots];
                         
                         await interaction.reply({
-                            content: `📊 **Salamanca Informal Bot Status for #${channelName}**\n\nStatus: ${statusEmoji} **${statusText}**\nCurrent Users: ${tracking.users.size}/10\nMessages: ${tracking.messageCount}\n⏰ Next Reset: ${nextResetTime}\n🕐 Current GMT+6: ${getCurrentGMT6Readable()}\n📝 **Registration:** ${isOpen ? '✅ Open for this hour' : '❌ Closed until next hour'}\n\n📋 **Registration List:**\n${fullList.join('\n')}`,
+                            content: `# 🎯 Salamanca Informal Registration\n\n📊 **Salamanca Informal Bot Status for #${channelName}**\n\nStatus: ${statusEmoji} **${statusText}**\nCurrent Users: ${tracking.users.size}/10\nMessages: ${tracking.messageCount}\n⏰ Next Reset: ${nextResetTime}\n🕐 Current GMT+6: ${getCurrentGMT6Readable()}\n📝 **Registration:** ${isOpen ? '✅ Open for this hour' : '❌ Closed until next hour'}\n\n📋 **Registration List:**\n${fullList.join('\n')}\n\n---\n**Made by Zircon**`,
                             ephemeral: true
                         });
                     } else {
                         await interaction.reply({
-                            content: `📊 **Salamanca Informal Bot Status for #${channelName}**\n\nStatus: 🟡 **INITIALIZING**\nBot is active but tracking not yet initialized.`,
+                            content: `# 🎯 Salamanca Informal Registration\n\n📊 **Salamanca Informal Bot Status for #${channelName}**\n\nStatus: 🟡 **INITIALIZING**\nBot is active but tracking not yet initialized.\n\n---\n**Made by Zircon**`,
                             ephemeral: true
                         });
                     }
                 } else {
                     await interaction.reply({
-                        content: `📊 **Salamanca Informal Bot Status for #${channelName}**\n\nStatus: 🔴 **INACTIVE**`,
+                        content: `# 🎯 Salamanca Informal Registration\n\n📊 **Salamanca Informal Bot Status for #${channelName}**\n\nStatus: 🔴 **INACTIVE**\n\n---\n**Made by Zircon**`,
                         ephemeral: true
                     });
                 }
@@ -412,7 +426,7 @@ client.on(Events.MessageCreate, async (message) => {
             // Notify channel about the reset
             try {
                 await message.channel.send({
-                    content: `🕐 **Hourly Reset Complete!**\n\n⏰ **Reset Time:** GMT+6 ${getCurrentGMT6Readable()}\n📊 **Previous Hour:** ${oldCount}/10 people registered\n✅ **Channel is now open for new registrations!**\n\n📋 **Current Registration List:**\n${emptyList.join('\n')}`
+                    content: `# 🎯 Salamanca Informal Registration\n\n🕐 **Hourly Reset Complete!**\n\n⏰ **Reset Time:** GMT+6 ${getCurrentGMT6Readable()}\n📊 **Previous Hour:** ${oldCount}/10 people registered\n✅ **Channel is now open for new registrations!**\n\n📋 **Current Registration List:**\n${emptyList.join('\n')}\n\n---\n**Made by Zircon**`
                 });
             } catch (error) {
                 console.error(`❌ Failed to send reset notification: ${error.message}`);
@@ -432,7 +446,7 @@ client.on(Events.MessageCreate, async (message) => {
                 
                 try {
                     await message.channel.send({
-                        content: `⏰ **Registration Period Closed!**\n\n🕐 **Current Time:** GMT+6 ${getCurrentGMT6Readable()}\n⏰ **Next Registration:** ${getNextResetTime(tracking.lastReset)}\n\nPlease wait for the next hour to register.`
+                        content: `# 🎯 Salamanca Informal Registration\n\n⏰ **Registration Period Closed!**\n\n🕐 **Current Time:** GMT+6 ${getCurrentGMT6Readable()}\n⏰ **Next Registration:** ${getNextResetTime(tracking.lastReset)}\n\nPlease wait for the next hour to register.\n\n---\n**Made by Zircon**`
                     }).then(warningMsg => {
                         // Auto-delete warning after 2 minutes
                         setTimeout(async () => {
@@ -457,11 +471,11 @@ client.on(Events.MessageCreate, async (message) => {
             return;
         } else if (content === '!help') {
             console.log(`📚 Help command received from ${userName}`);
-            await message.reply('📚 **Salamanca Informal Bot Commands:**\n• `!ping` - Test if bot is responding\n• `!help` - Show this help message\n• `!stats` - Show current monitoring stats\n• `/informalbot start` - Activate bot for this channel\n• `/informalbot stop` - Deactivate bot for this channel\n• `/informalbot status` - Check bot status\n\n⏰ **All times are in GMT+6 (Bangladesh Standard Time)**');
+            await message.reply('# 🎯 Salamanca Informal Registration\n\n📚 **Salamanca Informal Bot Commands:**\n• `!ping` - Test if bot is responding\n• `!help` - Show this help message\n• `!stats` - Show current monitoring stats\n• `/informalbot start` - Activate bot for this channel\n• `/informalbot stop` - Deactivate bot for this channel\n• `/informalbot status` - Check bot status\n\n⏰ **All times are in GMT+6 (Bangladesh Standard Time)**\n\n---\n**Made by Zircon**');
             return;
         } else if (content === '!status') {
             console.log(`📊 Status command received from ${userName}`);
-            await message.reply('✅ Bot is currently **ACTIVE** and monitoring this channel!');
+            await message.reply('# 🎯 Salamanca Informal Registration\n\n✅ Bot is currently **ACTIVE** and monitoring this channel!\n\n---\n**Made by Zircon**');
             return;
         } else if (content === '!stats') {
             console.log(`📈 Stats command received from ${userName}`);
@@ -516,7 +530,10 @@ client.on(Events.MessageCreate, async (message) => {
         // Handle registration logic for non-command messages
         // Check if user already sent a message this hour
         if (tracking.users.has(userId)) {
-            console.log(`❌ User ${userName} already registered this hour`);
+            // Get server nickname if available for better display
+            const displayName = getUserDisplayName(message);
+            
+            console.log(`❌ User ${displayName} already registered this hour`);
             // Delete the message if it's not "+"
             if (messageContent !== '+') {
                 try {
@@ -546,9 +563,9 @@ client.on(Events.MessageCreate, async (message) => {
             // Combine registered and empty slots
             const fullList = [...registeredList, ...emptySlots];
             
-            try {
+                            try {
                 await message.channel.send({
-                    content: `❌ **${userName}**, you've already registered this hour!\n\n⏰ Next reset: ${getNextResetTime(tracking.lastReset)}\n\n📋 **Current Registration List:**\n${fullList.join('\n')}`
+                    content: `# 🎯 Salamanca Informal Registration\n\n❌ **${displayName}**, you've already registered this hour!\n\n⏰ Next reset: ${getNextResetTime(tracking.lastReset)}\n\n📋 **Current Registration List:**\n${fullList.join('\n')}\n\n---\n**Made by Zircon**`
                 }).then(warningMsg => {
                     // Auto-delete warning after 2 minutes
                     setTimeout(async () => {
@@ -561,7 +578,7 @@ client.on(Events.MessageCreate, async (message) => {
                 });
             } catch (error) {
                 console.error(`❌ Failed to send duplicate registration warning: ${error.message}`);
-                }
+            }
             return;
         }
         
@@ -599,7 +616,7 @@ client.on(Events.MessageCreate, async (message) => {
             
             try {
                 await message.channel.send({
-                    content: `🚫 **Channel Registration is FULL!**\n\n📋 **Registered People (${tracking.users.size}/10):**\n${fullList.join('\n')}\n\n⏰ **Next reset:** ${getNextResetTime(tracking.lastReset)}\n\n**Made by Zircon Salamanca**`
+                    content: `# 🎯 Salamanca Informal Registration\n\n🚫 **Channel Registration is FULL!**\n\n📋 **Registered People (${tracking.users.size}/10):**\n${fullList.join('\n')}\n\n⏰ **Next reset:** ${getNextResetTime(tracking.lastReset)}\n\n---\n**Made by Zircon**`
                 }).then(warningMsg => {
                     // Auto-delete warning after 2 minutes
                     setTimeout(async () => {
@@ -616,7 +633,7 @@ client.on(Events.MessageCreate, async (message) => {
             return;
         }
         
-        // Check if message is exactly "+" (registration)
+                // Check if message is exactly "+" (registration)
         if (messageContent !== '+') {
             console.log(`⚠️ Invalid message: "${messageContent}" - not "+"`);
             // Delete the invalid message
@@ -626,10 +643,13 @@ client.on(Events.MessageCreate, async (message) => {
                 console.log(`Could not delete message: ${error.message}`);
             }
             
+            // Get server nickname if available for better display
+            const displayName = getUserDisplayName(message);
+            
             // Send warning message that auto-deletes after 2 minutes
             try {
                 const warningMsg = await message.channel.send({
-                    content: `⚠️ **${userName}**, Please Enter + for Registration`
+                    content: `# 🎯 Salamanca Informal Registration\n\n⚠️ **${displayName}**, Please Enter + for Registration\n\n---\n**Made by Zircon**`
                 });
                 
                 // Auto-delete warning after 2 minutes
@@ -649,27 +669,31 @@ client.on(Events.MessageCreate, async (message) => {
         
         // Valid "+" message - add user to tracking and increment message count
         console.log(`✅ Valid "+" message received from ${userName}`);
+        
+        // Get server nickname if available, otherwise use username
+        const displayName = getUserDisplayName(message);
+        
         tracking.users.add(userId);
-        tracking.usernames.set(userId, userName);
+        tracking.usernames.set(userId, displayName);
         tracking.messageCount++;
 
         // Check if this was the 10th registration
         if (tracking.users.size === 10) {
-            console.log(`🎉 10th registration reached by ${userName}`);
+            console.log(`🎉 10th registration reached by ${displayName}`);
             // Create list of all registered people
             const registeredList = Array.from(tracking.usernames.values()).map((name, index) => `${index + 1}. ${name}`).join('\n');
             
-            // Send final registration list - this message will never delete
-            try {
-                await message.channel.send({
-                    content: `📋 **All Registered People (10/10):**\n${registeredList}\n\n⏰ **Next reset:** ${getNextResetTime(tracking.lastReset)}\n\n**Made by Zircon Salamanca**`
-                });
+                            // Send final registration list - this message will never delete
+                try {
+                    await message.channel.send({
+                        content: `# 🎯 Salamanca Informal Registration\n\n📋 **All Registered People (10/10):**\n${registeredList}\n\n⏰ **Next reset:** ${getNextResetTime(tracking.lastReset)}\n\n---\n**Made by Zircon**`
+                    });
                 console.log(`📋 Final registration list sent`);
             } catch (error) {
                 console.error(`❌ Failed to send final registration list: ${error.message}`);
             }
         } else {
-            console.log(`✅ Regular registration confirmation sent to ${userName}`);
+            console.log(`✅ Regular registration confirmation sent to ${displayName}`);
             
             // Create current registration list with empty slots
             const registeredList = [];
@@ -691,11 +715,11 @@ client.on(Events.MessageCreate, async (message) => {
             // Combine registered and empty slots
             const fullList = [...registeredList, ...emptySlots];
             
-            // Send registration confirmation with full list
-            try {
-                await message.channel.send({
-                    content: `✅ **${userName}** successfully registered!\n\n📊 **Status:** ${tracking.users.size}/10 people registered\n⏰ Next reset: ${getNextResetTime(tracking.lastReset)}\n\n📋 **Current Registration List:**\n${fullList.join('\n')}`
-                }).then(confirmMsg => {
+                            // Send registration confirmation with full list
+                try {
+                    await message.channel.send({
+                        content: `# 🎯 Salamanca Informal Registration\n\n✅ **${displayName}** successfully registered!\n\n📊 **Status:** ${tracking.users.size}/10 people registered\n⏰ Next reset: ${getNextResetTime(tracking.lastReset)}\n\n📋 **Current Registration List:**\n${fullList.join('\n')}\n\n---\n**Made by Zircon**`
+                    }).then(confirmMsg => {
                     // Auto-delete confirmation after 2 minutes
                     setTimeout(async () => {
                         try {
@@ -710,7 +734,7 @@ client.on(Events.MessageCreate, async (message) => {
             }
         }
         
-        console.log(`✅ Registration recorded for ${userName} in channel ${channelId}. Total: ${tracking.users.size}/10`);
+        console.log(`✅ Registration recorded for ${displayName} in channel ${channelId}. Total: ${tracking.users.size}/10`);
         
     } catch (error) {
         console.error(`❌ Error processing message: ${error.message}`);
