@@ -715,119 +715,12 @@ client.on(Events.MessageCreate, async (message) => {
             return;
         }
         
-        console.log(`🔍 Message is not a command, checking if it's "+"`);
+                console.log(`🔍 Message is not a command, checking if it's "+" or "-"`);
         
-        // Handle registration logic for non-command messages
-        // Check if user already sent a message this hour
-        if (tracking.users.has(userId)) {
-            // Get server nickname if available for better display
-            const displayName = getUserDisplayName(message);
-            
-            console.log(`❌ User ${displayName} already registered this hour`);
-            // Delete the message if it's not "+" or "-"
-            if (messageContent !== '+' && messageContent !== '-') {
-                try {
-                    await message.delete();
-                } catch (error) {
-                    console.log(`Could not delete message: ${error.message}`);
-                }
-            }
-            
-            // Create current registration list with empty slots
-            const registeredList = [];
-            const emptySlots = [];
-            
-            // Fill in registered names (use a different variable name to avoid conflict)
-            const currentUsers = Array.from(tracking.users);
-            for (let i = 1; i <= 10; i++) {
-                if (i <= currentUsers.length) {
-                    // Find the username for this position
-                    const currentUserId = currentUsers[i - 1];
-                    const username = tracking.usernames.get(currentUserId);
-                    registeredList.push(`${i}. ${username}`);
-                } else {
-                    // Empty slot
-                    emptySlots.push(`${i}. [Empty Slot]`);
-                }
-            }
-            
-            // Combine registered and empty slots
-            const fullList = [...registeredList, ...emptySlots];
-            
-            try {
-                await message.channel.send({
-                    content: `# 🎯 Salamanca Informal Registration\n\n❌ **${displayName}**, you've already registered this hour!\n\n⏰ Next reset: ${getNextResetTime(tracking.lastReset)}\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n📋 **Current Registration List:**\n${fullList.join('\n')}\n\n---\n**Made by Zircon**`
-                }).then(warningMsg => {
-                    // Auto-delete warning after 2 minutes
-                    setTimeout(async () => {
-                        try {
-                            await warningMsg.delete();
-                        } catch (error) {
-                            console.log(`Could not delete warning message: ${error.message}`);
-                        }
-                    }, 120000); // 2 minutes = 120,000 milliseconds
-                });
-            } catch (error) {
-                console.error(`❌ Failed to send duplicate registration warning: ${error.message}`);
-            }
-            return;
-        }
-        
-        // Check if we've reached the 10 person limit
-        if (tracking.users.size >= 10) {
-            console.log(`🚫 Channel is full (${tracking.users.size}/10)`);
-            // Delete the message if it's not "+" or "-"
-            if (messageContent !== '+' && messageContent !== '-') {
-                try {
-                    await message.delete();
-                } catch (error) {
-                    console.log(`Could not delete message: ${error.message}`);
-                }
-            }
-            
-            // Create list of registered people with empty slots
-            const registeredList = [];
-            const emptySlots = [];
-            
-            // Fill in registered names (use a different variable name to avoid conflict)
-            const currentUsers = Array.from(tracking.users);
-            for (let i = 1; i <= 10; i++) {
-                if (i <= currentUsers.length) {
-                    // Find the username for this position
-                    const currentUserId = currentUsers[i - 1];
-                    const username = tracking.usernames.get(currentUserId);
-                    registeredList.push(`${i}. ${username}`);
-                } else {
-                    // Empty slot
-                    emptySlots.push(`${i}. [Empty Slot]`);
-                }
-            }
-            
-            // Combine registered and empty slots
-            const fullList = [...registeredList, ...emptySlots];
-            
-            try {
-                await message.channel.send({
-                    content: `# 🎯 Salamanca Informal Registration\n\n🚫 **Channel Registration is FULL!**\n\n📋 **Registered People (${tracking.users.size}/10):**\n${fullList.join('\n')}\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n⏰ **Next reset:** ${getNextResetTime(tracking.lastReset)}\n\n---\n**Made by Zircon**`
-                }).then(warningMsg => {
-                    // Auto-delete warning after 2 minutes
-                    setTimeout(async () => {
-                        try {
-                            await warningMsg.delete();
-                        } catch (error) {
-                            console.log(`Could not delete warning message: ${error.message}`);
-                        }
-                    }, 120000);
-                });
-            } catch (error) {
-                console.error(`❌ Failed to send channel full message: ${error.message}`);
-            }
-            return;
-        }
-        
-                // Check if message is exactly "+" (registration) or "-" (cancellation)
+        // Check if message is exactly "+" (registration) or "-" (cancellation) FIRST
         if (messageContent === '+') {
             // Handle registration logic (existing code will continue below)
+            // Note: This will continue to the registration logic below
         } else if (messageContent === '-') {
             // Handle cancellation logic
             console.log(`❌ Cancellation request received from ${userName}`);
@@ -905,6 +798,114 @@ client.on(Events.MessageCreate, async (message) => {
                 
                 return;
             }
+        }
+        
+        // Handle registration logic for non-command messages
+        // Check if user already sent a message this hour (only for non-+/- messages)
+        if (tracking.users.has(userId)) {
+            // Get server nickname if available for better display
+            const displayName = getUserDisplayName(message);
+            
+            console.log(`❌ User ${displayName} already registered this hour`);
+            // Delete the message if it's not "+" or "-"
+            if (messageContent !== '+' && messageContent !== '-') {
+                try {
+                    await message.delete();
+                } catch (error) {
+                    console.log(`Could not delete message: ${error.message}`);
+                }
+            }
+            
+            // Create current registration list with empty slots
+            const registeredList = [];
+            const emptySlots = [];
+            
+            // Fill in registered names (use a different variable name to avoid conflict)
+            const currentUsers = Array.from(tracking.users);
+            for (let i = 1; i <= 10; i++) {
+                if (i <= currentUsers.length) {
+                    // Find the username for this position
+                    const currentUserId = currentUsers[i - 1];
+                    const username = tracking.usernames.get(currentUserId);
+                    registeredList.push(`${i}. ${username}`);
+                } else {
+                    // Empty slot
+                    emptySlots.push(`${i}. [Empty Slot]`);
+                }
+            }
+            
+            // Combine registered and empty slots
+            const fullList = [...registeredList, ...emptySlots];
+            
+            try {
+                const warningMsg = await message.channel.send({
+                    content: `# 🎯 Salamanca Informal Registration\n\n❌ **${displayName}**, you've already registered this hour!\n\n⏰ Next reset: ${getNextResetTime(tracking.lastReset)}\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n📋 **Current Registration List:**\n${fullList.join('\n')}\n\n---\n**Made by Zircon**`
+                });
+                
+                // Auto-delete warning after 2 minutes
+                setTimeout(async () => {
+                    try {
+                        await warningMsg.delete();
+                    } catch (error) {
+                        console.log(`Could not delete warning message: ${error.message}`);
+                    }
+                }, 120000); // 2 minutes = 120,000 milliseconds
+            } catch (error) {
+                console.error(`❌ Failed to send duplicate registration warning: ${error.message}`);
+            }
+            return;
+        }
+        
+        // Check if we've reached the 10 person limit
+        if (tracking.users.size >= 10) {
+            console.log(`🚫 Channel is full (${tracking.users.size}/10)`);
+            // Delete the message if it's not "+" or "-"
+            if (messageContent !== '+' && messageContent !== '-') {
+                try {
+                    await message.delete();
+                } catch (error) {
+                    console.log(`Could not delete message: ${error.message}`);
+                }
+            }
+            
+            // Create list of registered people with empty slots
+            const registeredList = [];
+            const emptySlots = [];
+            
+            // Fill in registered names (use a different variable name to avoid conflict)
+            const currentUsers = Array.from(tracking.users);
+            for (let i = 1; i <= 10; i++) {
+                if (i <= currentUsers.length) {
+                    // Find the username for this position
+                    const currentUserId = currentUsers[i - 1];
+                    const username = tracking.usernames.get(currentUserId);
+                    registeredList.push(`${i}. ${username}`);
+                } else {
+                    // Empty slot
+                    emptySlots.push(`${i}. [Empty Slot]`);
+                }
+            }
+            
+            // Combine registered and empty slots
+            const fullList = [...registeredList, ...emptySlots];
+            
+            try {
+                const warningMsg = await message.channel.send({
+                    content: `# 🎯 Salamanca Informal Registration\n\n🚫 **Channel Registration is FULL!**\n\n📋 **Registered People (${tracking.users.size}/10):**\n${fullList.join('\n')}\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n⏰ **Next reset:** ${getNextResetTime(tracking.lastReset)}\n\n---\n**Made by Zircon**`
+                });
+                
+                // Auto-delete warning after 2 minutes
+                setTimeout(async () => {
+                    try {
+                        await warningMsg.delete();
+                    } catch (error) {
+                        console.log(`Could not delete warning message: ${error.message}`);
+                    }
+                }, 120000);
+            } catch (error) {
+                console.error(`❌ Failed to send channel full message: ${error.message}`);
+            }
+            return;
         } else if (messageContent !== '+') {
             console.log(`⚠️ Invalid message: "${messageContent}" - not "+" or "-"`);
             // Delete the invalid message
@@ -938,6 +939,7 @@ client.on(Events.MessageCreate, async (message) => {
             return;
         }
         
+        // Only reach here if messageContent === '+'
         // Valid "+" message - add user to tracking and increment message count
         console.log(`✅ Valid "+" message received from ${userName}`);
         
@@ -989,18 +991,18 @@ client.on(Events.MessageCreate, async (message) => {
             
             // Send registration confirmation with full list
             try {
-                await message.channel.send({
+                const confirmMsg = await message.channel.send({
                     content: `# 🎯 Salamanca Informal Registration\n\n✅ **${displayName}** successfully registered!\n\n📊 **Status:** ${tracking.users.size}/10 people registered\n⏰ Next reset: ${getNextResetTime(tracking.lastReset)}\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n📋 **Current Registration List:**\n${fullList.join('\n')}\n\n---\n**Made by Zircon**`
-                }).then(confirmMsg => {
-                    // Auto-delete confirmation after 2 minutes
-                    setTimeout(async () => {
-                        try {
-                            await confirmMsg.delete();
-                        } catch (error) {
-                            console.log(`Could not delete confirmation message: ${error.message}`);
-                        }
-                    }, 120000);
                 });
+                
+                // Auto-delete confirmation after 2 minutes
+                setTimeout(async () => {
+                    try {
+                        await confirmMsg.delete();
+                    } catch (error) {
+                        console.log(`Could not delete confirmation message: ${error.message}`);
+                    }
+                }, 120000);
             } catch (error) {
                 console.error(`❌ Failed to send registration confirmation: ${error.message}`);
             }
