@@ -1,19 +1,33 @@
 {
   "name": "informalbot",
   "version": "1.0.0",
-  "description": "",
+  "description": "Discord bot for channel monitoring with Railway deployment",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node railway-start.js",
+    "dev": "nodemon index.js",
+    "railway": "node railway-start.js",
+    "local": "node index.js",
+    "forever": "forever start railway-start.js",
+    "pm2": "pm2 start railway-start.js --name informalbot",
+    "pm2:stop": "pm2 stop informalbot",
+    "pm2:restart": "pm2 restart informalbot",
+    "pm2:logs": "pm2 logs informalbot",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": ["discord", "bot", "railway", "monitoring"],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "dependencies": {
     "@discordjs/builders": "^1.11.3",
     "discord.js": "^14.21.0",
     "dotenv": "^17.2.1",
     "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }

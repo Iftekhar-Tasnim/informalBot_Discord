@@ -1,6 +1,75 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Collection, Events, REST, Routes, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
+// Global error handling to prevent crashes
+process.on('uncaughtException', (error) => {
+    console.error('🚨 UNCAUGHT EXCEPTION - Bot will restart automatically:', error);
+    console.error('Stack trace:', error.stack);
+    
+    // Give some time for logging before restart
+    setTimeout(() => {
+        console.log('🔄 Restarting bot due to uncaught exception...');
+        process.exit(1); // Exit with error code to trigger restart
+    }, 5000);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('🚨 UNHANDLED REJECTION - Bot will restart automatically:', reason);
+    console.error('Promise:', promise);
+    
+    // Give some time for logging before restart
+    setTimeout(() => {
+        console.log('🔄 Restarting bot due to unhandled rejection...');
+        process.exit(1); // Exit with error code to trigger restart
+    }, 5000);
+});
+
+// Process monitoring and health checks
+let lastHeartbeat = Date.now();
+const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+const MAX_HEARTBEAT_DELAY = 120000; // 2 minutes
+
+// Heartbeat function to ensure bot is responsive
+function sendHeartbeat() {
+    const now = Date.now();
+    const timeSinceLastHeartbeat = now - lastHeartbeat;
+    
+    if (timeSinceLastHeartbeat > MAX_HEARTBEAT_DELAY) {
+        console.warn(`⚠️ Heartbeat delay detected: ${timeSinceLastHeartbeat}ms since last heartbeat`);
+    }
+    
+    lastHeartbeat = now;
+    console.log(`💓 Bot heartbeat - Uptime: ${Math.floor(process.uptime())}s, Memory: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`);
+}
+
+// Start heartbeat monitoring
+setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+
+// Graceful shutdown handling
+process.on('SIGINT', () => {
+    console.log('🛑 Received SIGINT, shutting down gracefully...');
+    gracefulShutdown();
+});
+
+process.on('SIGTERM', () => {
+    console.log('🛑 Received SIGTERM, shutting down gracefully...');
+    gracefulShutdown();
+});
+
+async function gracefulShutdown() {
+    try {
+        console.log('🔄 Disconnecting from Discord...');
+        if (client && client.destroy) {
+            await client.destroy();
+        }
+        console.log('✅ Discord connection closed');
+        process.exit(0);
+    } catch (error) {
+        console.error('❌ Error during graceful shutdown:', error);
+        process.exit(1);
+    }
+}
+
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
 // Store which channels the bot is active in
@@ -453,7 +522,7 @@ client.on(Events.MessageCreate, async (message) => {
     }
 });
 
-// Add connection status monitoring
+// Enhanced connection status monitoring with auto-reconnection
 client.on(Events.Warn, (info) => {
     console.log(`⚠️ Discord.js Warning: ${info}`);
 });
@@ -461,14 +530,47 @@ client.on(Events.Warn, (info) => {
 client.on(Events.Error, (error) => {
     console.error(`❌ Discord.js Error: ${error.message}`);
     console.error(error.stack);
+    
+    // Attempt to reconnect on critical errors
+    if (error.code === 'ECONNRESET' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+        console.log('🔄 Critical connection error detected, attempting reconnection...');
+        setTimeout(() => {
+            try {
+                client.destroy();
+                client.login(process.env.TOKEN);
+            } catch (reconnectError) {
+                console.error('❌ Reconnection failed:', reconnectError.message);
+            }
+        }, 5000);
+    }
 });
 
 client.on(Events.Disconnect, (event) => {
     console.log(`🔌 Bot disconnected: ${event.reason} (Code: ${event.code})`);
+    connectionAttempts++;
+    
+    if (connectionAttempts <= MAX_RECONNECTION_ATTEMPTS) {
+        console.log(`🔄 Attempting reconnection ${connectionAttempts}/${MAX_RECONNECTION_ATTEMPTS}...`);
+        setTimeout(() => {
+            try {
+                client.login(process.env.TOKEN);
+            } catch (error) {
+                console.error('❌ Reconnection attempt failed:', error.message);
+            }
+        }, RECONNECTION_DELAY);
+    } else {
+        console.error('❌ Max reconnection attempts reached. Bot will exit and restart.');
+        process.exit(1);
+    }
 });
 
 client.on(Events.Reconnecting, () => {
-    console.log(`🔄 Bot is reconnecting...`);
+    console.log(`🔄 Bot is reconnecting... (Attempt ${connectionAttempts})`);
+});
+
+client.on(Events.Resume, () => {
+    console.log(`✅ Bot connection resumed successfully!`);
+    connectionAttempts = 0; // Reset connection attempts on successful resume
 });
 
 // Test other events to see if Discord is working
