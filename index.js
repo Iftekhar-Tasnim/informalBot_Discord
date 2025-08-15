@@ -737,12 +737,13 @@ client.on(Events.MessageCreate, async (message) => {
             const registeredList = [];
             const emptySlots = [];
             
-            // Fill in registered names
+            // Fill in registered names (use a different variable name to avoid conflict)
+            const currentUsers = Array.from(tracking.users);
             for (let i = 1; i <= 10; i++) {
-                if (i <= tracking.users.size) {
+                if (i <= currentUsers.length) {
                     // Find the username for this position
-                    const userId = Array.from(tracking.users)[i - 1];
-                    const username = tracking.usernames.get(userId);
+                    const currentUserId = currentUsers[i - 1];
+                    const username = tracking.usernames.get(currentUserId);
                     registeredList.push(`${i}. ${username}`);
                 } else {
                     // Empty slot
@@ -753,10 +754,10 @@ client.on(Events.MessageCreate, async (message) => {
             // Combine registered and empty slots
             const fullList = [...registeredList, ...emptySlots];
             
-                                            try {
-                    await message.channel.send({
-                        content: `# 🎯 Salamanca Informal Registration\n\n❌ **${displayName}**, you've already registered this hour!\n\n⏰ Next reset: ${getNextResetTime(tracking.lastReset)}\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n📋 **Current Registration List:**\n${fullList.join('\n')}\n\n---\n**Made by Zircon**`
-                    }).then(warningMsg => {
+            try {
+                await message.channel.send({
+                    content: `# 🎯 Salamanca Informal Registration\n\n❌ **${displayName}**, you've already registered this hour!\n\n⏰ Next reset: ${getNextResetTime(tracking.lastReset)}\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n📋 **Current Registration List:**\n${fullList.join('\n')}\n\n---\n**Made by Zircon**`
+                }).then(warningMsg => {
                     // Auto-delete warning after 2 minutes
                     setTimeout(async () => {
                         try {
@@ -788,12 +789,13 @@ client.on(Events.MessageCreate, async (message) => {
             const registeredList = [];
             const emptySlots = [];
             
-            // Fill in registered names
+            // Fill in registered names (use a different variable name to avoid conflict)
+            const currentUsers = Array.from(tracking.users);
             for (let i = 1; i <= 10; i++) {
-                if (i <= tracking.users.size) {
+                if (i <= currentUsers.length) {
                     // Find the username for this position
-                    const userId = Array.from(tracking.users)[i - 1];
-                    const username = tracking.usernames.get(userId);
+                    const currentUserId = currentUsers[i - 1];
+                    const username = tracking.usernames.get(currentUserId);
                     registeredList.push(`${i}. ${username}`);
                 } else {
                     // Empty slot
@@ -844,12 +846,13 @@ client.on(Events.MessageCreate, async (message) => {
                 const registeredList = [];
                 const emptySlots = [];
                 
-                // Fill in registered names
+                // Fill in registered names (use a different variable name to avoid conflict)
+                const remainingUsers = Array.from(tracking.users);
                 for (let i = 1; i <= 10; i++) {
-                    if (i <= tracking.users.size) {
+                    if (i <= remainingUsers.length) {
                         // Find the username for this position
-                        const userId = Array.from(tracking.users)[i - 1];
-                        const username = tracking.usernames.get(userId);
+                        const remainingUserId = remainingUsers[i - 1];
+                        const username = tracking.usernames.get(remainingUserId);
                         registeredList.push(`${i}. ${username}`);
                     } else {
                         // Empty slot
@@ -862,18 +865,18 @@ client.on(Events.MessageCreate, async (message) => {
                 
                 // Send cancellation confirmation
                 try {
-                    await message.channel.send({
+                    const confirmMsg = await message.channel.send({
                         content: `# 🎯 Salamanca Informal Registration\n\n❌ **${displayName}** has cancelled their registration!\n\n📊 **Status:** ${tracking.users.size}/10 people registered\n⏰ Next reset: ${getNextResetTime(tracking.lastReset)}\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n📋 **Current Registration List:**\n${fullList.join('\n')}\n\n---\n**Made by Zircon**`
-                    }).then(confirmMsg => {
-                        // Auto-delete confirmation after 2 minutes
-                        setTimeout(async () => {
-                            try {
-                                await confirmMsg.delete();
-                            } catch (error) {
-                                console.log(`Could not delete cancellation confirmation: ${error.message}`);
-                            }
-                        }, 120000);
                     });
+                    
+                    // Auto-delete confirmation after 2 minutes
+                    setTimeout(async () => {
+                        try {
+                            await confirmMsg.delete();
+                        } catch (error) {
+                            console.log(`Could not delete cancellation confirmation: ${error.message}`);
+                        }
+                    }, 120000);
                 } catch (error) {
                     console.error(`❌ Failed to send cancellation confirmation: ${error.message}`);
                 }
@@ -967,12 +970,13 @@ client.on(Events.MessageCreate, async (message) => {
             const registeredList = [];
             const emptySlots = [];
             
-            // Fill in registered names
+            // Fill in registered names (use a different variable name to avoid conflict)
+            const currentUsers = Array.from(tracking.users);
             for (let i = 1; i <= 10; i++) {
-                if (i <= tracking.users.size) {
+                if (i <= currentUsers.length) {
                     // Find the username for this position
-                    const userId = Array.from(tracking.users)[i - 1];
-                    const username = tracking.usernames.get(userId);
+                    const currentUserId = currentUsers[i - 1];
+                    const username = tracking.usernames.get(currentUserId);
                     registeredList.push(`${i}. ${username}`);
                 } else {
                     // Empty slot
@@ -983,11 +987,11 @@ client.on(Events.MessageCreate, async (message) => {
             // Combine registered and empty slots
             const fullList = [...registeredList, ...emptySlots];
             
-                            // Send registration confirmation with full list
-                try {
-                    await message.channel.send({
-                        content: `# 🎯 Salamanca Informal Registration\n\n✅ **${displayName}** successfully registered!\n\n📊 **Status:** ${tracking.users.size}/10 people registered\n⏰ Next reset: ${getNextResetTime(tracking.lastReset)}\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n📋 **Current Registration List:**\n${fullList.join('\n')}\n\n---\n**Made by Zircon**`
-                    }).then(confirmMsg => {
+            // Send registration confirmation with full list
+            try {
+                await message.channel.send({
+                    content: `# 🎯 Salamanca Informal Registration\n\n✅ **${displayName}** successfully registered!\n\n📊 **Status:** ${tracking.users.size}/10 people registered\n⏰ Next reset: ${getNextResetTime(tracking.lastReset)}\n\n📋 **Instructions:** Press **+** for registration, **-** for cancellation\n\n📋 **Current Registration List:**\n${fullList.join('\n')}\n\n---\n**Made by Zircon**`
+                }).then(confirmMsg => {
                     // Auto-delete confirmation after 2 minutes
                     setTimeout(async () => {
                         try {
