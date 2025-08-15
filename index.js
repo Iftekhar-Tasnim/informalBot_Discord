@@ -45,6 +45,55 @@ function sendHeartbeat() {
 // Start heartbeat monitoring
 setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
 
+// Scheduled reset check - runs every minute to ensure precise reset timing
+function checkScheduledResets() {
+    const now = getCurrentGMT6Date();
+    const currentMinute = now.getMinutes();
+    
+    // Check if it's exactly 00:01 of any hour
+    if (currentMinute === 1) {
+        console.log(`🕐 Scheduled reset check at GMT+6: ${getCurrentGMT6Readable()}`);
+        
+        // Check all active channels for reset
+        activeChannels.forEach(channelId => {
+            const tracking = channelTracking.get(channelId);
+            if (tracking && shouldReset(tracking.lastReset)) {
+                console.log(`🔄 Scheduled reset triggered for channel ${channelId}`);
+                
+                // Perform the reset
+                const oldCount = tracking.users.size;
+                tracking.users.clear();
+                tracking.usernames.clear();
+                tracking.messageCount = 0;
+                tracking.lastReset = now;
+                
+                console.log(`🔄 Scheduled reset completed for channel ${channelId}. Cleared ${oldCount} registrations.`);
+                
+                // Try to send reset notification to the channel
+                try {
+                    const channel = client.channels.cache.get(channelId);
+                    if (channel) {
+                        // Create empty registration list
+                        const emptyList = [];
+                        for (let i = 1; i <= 10; i++) {
+                            emptyList.push(`${i}. [Empty Slot]`);
+                        }
+                        
+                        channel.send({
+                            content: `# 🎯 Salamanca Informal Registration\n\n🕐 **Scheduled Hourly Reset Complete!**\n\n⏰ **Reset Time:** GMT+6 ${getCurrentGMT6Readable()}\n📊 **Previous Hour:** ${oldCount}/10 people registered\n✅ **Channel is now open for new registrations!**\n\n🎯 **Calling all ${getTurferRankMention(guild)}!**\n\n📝 **Next Informal Event Registration is NOW OPEN!**\n\n⏰ **Next Reset:** ${getNextResetTime(tracking.lastReset)}\n\n📋 **Current Registration List:**\n${emptyList.join('\n')}\n\n---\n**Made by Zircon**`
+                        });
+                    }
+                } catch (error) {
+                    console.error(`❌ Failed to send scheduled reset notification: ${error.message}`);
+                }
+            }
+        });
+    }
+}
+
+// Start scheduled reset monitoring (every minute)
+setInterval(checkScheduledResets, 60000); // 60 seconds = 1 minute
+
 // Graceful shutdown handling
 process.on('SIGINT', () => {
     console.log('🛑 Received SIGINT, shutting down gracefully...');
@@ -112,29 +161,43 @@ function getCurrentGMT6Date() {
     return new Date(now.getTime() + (gmt6Offset * 60 * 1000));
 }
 
-// Function to check if it's time to reset (every hour on the clock using GMT+6)
-// Example: If last reset was at 1:00, then at 2:00 this will return true
-// This ensures reset happens exactly at the hour boundary
+// Function to check if it's time to reset (every hour at 00:01 using GMT+6)
+// This ensures reset happens exactly at 00:01 of every hour
 function shouldReset(lastReset) {
     const now = getCurrentGMT6Date();
     const lastResetTime = new Date(lastReset);
     
-    // Get current GMT+6 hour and last reset GMT+6 hour
+    // Get current GMT+6 time components
     const currentGMT6Hour = now.getHours();
+    const currentGMT6Minute = now.getMinutes();
     const lastResetGMT6Hour = lastResetTime.getHours();
+    const lastResetGMT6Minute = lastResetTime.getMinutes();
     
-    // Reset if it's a new GMT+6 hour (e.g., from 1:59 to 2:00)
-    // This ensures reset happens exactly at the hour boundary
-    return currentGMT6Hour !== lastResetGMT6Hour;
+    // Reset if:
+    // 1. It's a new hour (current hour != last reset hour), OR
+    // 2. It's the same hour but we're at 00:01 and last reset was at 00:00
+    // This ensures reset happens exactly at 00:01 of every hour
+    if (currentGMT6Hour !== lastResetGMT6Hour) {
+        return true;
+    }
+    
+    // If same hour, check if we're at 00:01 and last reset was at 00:00
+    if (currentGMT6Hour === lastResetGMT6Hour && 
+        currentGMT6Minute === 1 && 
+        lastResetGMT6Minute === 0) {
+        return true;
+    }
+    
+    return false;
 }
 
 // Function to get next reset time (using GMT+6 time)
 function getNextResetTime(lastReset) {
     const now = getCurrentGMT6Date();
     
-    // Calculate the next hour boundary
+    // Calculate the next hour boundary at 00:01
     const nextReset = new Date(now);
-    nextReset.setHours(nextReset.getHours() + 1, 0, 0, 0); // Next hour at 00:00
+    nextReset.setHours(nextReset.getHours() + 1, 1, 0, 0); // Next hour at 00:01
     
     // Format the time as HH:MM AM/PM
     const hours = nextReset.getHours();
@@ -180,31 +243,89 @@ function getUserDisplayName(message) {
     return userName;
 }
 
+// Function to get mention string for 5 | ᴛᴜʀғᴇʀ rank people
+function getTurferRankMention(guild) {
+    try {
+        // Look for role with name containing "5" and "ᴛᴜʀғᴇʀ" or similar
+        const turferRole = guild.roles.cache.find(role => 
+            role.name.includes('5') && 
+            (role.name.includes('ᴛᴜʀғᴇʀ') || 
+             role.name.includes('TURFER') || 
+             role.name.includes('turfer') ||
+             role.name.includes('Turfer'))
+        );
+        
+        if (turferRole) {
+            return `<@&${turferRole.id}>`; // Role mention
+        }
+        
+        // Fallback: try to find any role with "5" and rank-related terms
+        const rankRole = guild.roles.cache.find(role => 
+            role.name.includes('5') && 
+            (role.name.includes('rank') || 
+             role.name.includes('Rank') ||
+             role.name.includes('RANK'))
+        );
+        
+        if (rankRole) {
+            return `<@&${rankRole.id}>`; // Role mention
+        }
+        
+        // If no specific role found, return a general mention
+        return '**5 | ᴛᴜʀғᴇʀ rank people**';
+        
+    } catch (error) {
+        console.log(`Could not find turfer rank role: ${error.message}`);
+        return '**5 | ᴛᴜʀғᴇʀ rank people**';
+    }
+}
+
 // Function to check if registrations are currently allowed
 function isRegistrationOpen(lastReset) {
     const now = getCurrentGMT6Date();
     const lastResetTime = new Date(lastReset);
     
-    // Get current GMT+6 hour and last reset GMT+6 hour
+    // Get current GMT+6 time components
     const currentGMT6Hour = now.getHours();
+    const currentGMT6Minute = now.getMinutes();
     const lastResetGMT6Hour = lastResetTime.getHours();
+    const lastResetGMT6Minute = lastResetTime.getMinutes();
     
-    // Registration is open if we're in the same hour as the last reset
-    // This means: if last reset was at 1:00, registrations are open from 1:00 to 1:59
-    // At 2:00, shouldReset will trigger and clear the data, then registrations open again
-    return currentGMT6Hour === lastResetGMT6Hour;
+    // Registration is open if:
+    // 1. We're in the same hour as the last reset, AND
+    // 2. We're past the 00:01 reset time (to avoid edge case at exactly 00:01)
+    // This means: if last reset was at 1:01, registrations are open from 1:01 to 1:59
+    // At 2:01, shouldReset will trigger and clear the data, then registrations open again
+    if (currentGMT6Hour === lastResetGMT6Hour) {
+        // Same hour - check if we're past the reset minute
+        if (currentGMT6Minute > lastResetGMT6Minute) {
+            return true;
+        }
+        // If we're at exactly the reset minute, wait a bit to avoid edge cases
+        if (currentGMT6Minute === lastResetGMT6Minute) {
+            return false;
+        }
+    }
+    
+    return false;
 }
 
 // Function to initialize or reset channel tracking
 function initializeChannelTracking(channelId) {
     const now = getCurrentGMT6Date();
+    
+    // Set the initial reset time to the current hour at 00:01
+    const initialResetTime = new Date(now);
+    initialResetTime.setMinutes(1, 0, 0); // Set to 00:01 of current hour
+    
     channelTracking.set(channelId, {
         users: new Set(),
         usernames: new Map(), // userId -> username
-        lastReset: now,
+        lastReset: initialResetTime,
         messageCount: 0
     });
     console.log(`🕐 Channel tracking initialized for ${channelId} at GMT+6: ${getCurrentGMT6Readable()}`);
+    console.log(`🔄 Next reset scheduled for: ${getNextResetTime(initialResetTime)}`);
 }
 
 // Register slash commands when bot is ready
@@ -262,6 +383,32 @@ client.once('ready', async () => {
     } catch (error) {
         console.error('❌ Error refreshing commands:', error);
     }
+    
+    // Send startup message to all active channels after a delay
+    setTimeout(async () => {
+        console.log('🚀 Sending startup messages to active channels...');
+        
+        // Send startup message to all guilds the bot is in
+        client.guilds.cache.forEach(async (guild) => {
+            try {
+                // Find the first text channel in each guild
+                const textChannel = guild.channels.cache.find(ch => ch.type === 0); // Text channel
+                if (textChannel) {
+                    console.log(`📢 Sending startup message to #${textChannel.name} in ${guild.name}`);
+                    
+                    await textChannel.send({
+                        content: `# 🎯 Salamanca Informal Registration\n\n🚀 **Bot Startup Complete!**\n\n🎯 **Calling all ${getTurferRankMention(guild)}!**\n\n📝 **Informal Event Registration System is READY!**\n\n⏰ **Current GMT+6 Time:** ${getCurrentGMT6Readable()}\n📊 **System Status:** Online and Monitoring\n🔄 **Reset Schedule:** Every hour at 00:01 (GMT+6)\n\nUse \`/informalbot start\` to activate registration in this channel!\n\n---\n**Made by Zircon**`
+                    });
+                    
+                    console.log(`✅ Startup message sent to #${textChannel.name}`);
+                }
+            } catch (error) {
+                console.error(`❌ Failed to send startup message to guild ${guild.name}: ${error.message}`);
+            }
+        });
+        
+        console.log('✅ Startup messages completed');
+    }, 5000); // Wait 5 seconds after bot is ready
 });
 
 // Handle slash command interactions
@@ -293,7 +440,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 }
                 
                 await interaction.reply({
-                    content: `# 🎯 Salamanca Informal Registration\n\n🤖 **Salamanca Informal Bot activated for #${channelName}**\n\n📊 **Message Monitoring System:**\n• Max 10 unique people per hour\n• 1 message per person per hour\n• Resets every hour on the clock (GMT+6)\n\nUse \`!stats\` to see current status!\n\n---\n**Made by Zircon**`,
+                    content: `# 🎯 Salamanca Informal Registration\n\n🤖 **Salamanca Informal Bot activated for #${channelName}**\n\n🎯 **Calling all ${getTurferRankMention(interaction.guild)}!**\n\n📝 **Informal Event Registration is NOW OPEN!**\n\n📊 **Message Monitoring System:**\n• Max 10 unique people per hour\n• 1 message per person per hour\n• Resets every hour at 00:01 (GMT+6)\n\nUse \`!stats\` to see current status!\n\n---\n**Made by Zircon**`,
                     ephemeral: false
                 });
                 console.log(`✅ Salamanca Informal Bot activated for channel: ${channelName} (${channelId})`);
@@ -426,7 +573,7 @@ client.on(Events.MessageCreate, async (message) => {
             // Notify channel about the reset
             try {
                 await message.channel.send({
-                    content: `# 🎯 Salamanca Informal Registration\n\n🕐 **Hourly Reset Complete!**\n\n⏰ **Reset Time:** GMT+6 ${getCurrentGMT6Readable()}\n📊 **Previous Hour:** ${oldCount}/10 people registered\n✅ **Channel is now open for new registrations!**\n\n📋 **Current Registration List:**\n${emptyList.join('\n')}\n\n---\n**Made by Zircon**`
+                    content: `# 🎯 Salamanca Informal Registration\n\n🕐 **Hourly Reset Complete!**\n\n⏰ **Reset Time:** GMT+6 ${getCurrentGMT6Readable()}\n📊 **Previous Hour:** ${oldCount}/10 people registered\n✅ **Channel is now open for new registrations!**\n\n🎯 **Calling all ${getTurferRankMention(message.guild)}!**\n\n📝 **Next Informal Event Registration is NOW OPEN!**\n\n⏰ **Next Reset:** ${getNextResetTime(tracking.lastReset)}\n\n📋 **Current Registration List:**\n${emptyList.join('\n')}\n\n---\n**Made by Zircon**`
                 });
             } catch (error) {
                 console.error(`❌ Failed to send reset notification: ${error.message}`);
@@ -471,7 +618,7 @@ client.on(Events.MessageCreate, async (message) => {
             return;
         } else if (content === '!help') {
             console.log(`📚 Help command received from ${userName}`);
-            await message.reply('# 🎯 Salamanca Informal Registration\n\n📚 **Salamanca Informal Bot Commands:**\n• `!ping` - Test if bot is responding\n• `!help` - Show this help message\n• `!stats` - Show current monitoring stats\n• `/informalbot start` - Activate bot for this channel\n• `/informalbot stop` - Deactivate bot for this channel\n• `/informalbot status` - Check bot status\n\n⏰ **All times are in GMT+6 (Bangladesh Standard Time)**\n\n---\n**Made by Zircon**');
+            await message.reply(`# 🎯 Salamanca Informal Registration\n\n📚 **Salamanca Informal Bot Commands:**\n• \`!ping\` - Test if bot is responding\n• \`!help\` - Show this help message\n• \`!stats\` - Show current monitoring stats\n• \`/informalbot start\` - Activate bot for this channel\n• \`/informalbot stop\` - Deactivate bot for this channel\n• \`/informalbot status\` - Check bot status\n\n🎯 **For ${getTurferRankMention(message.guild)} only!**\n\n⏰ **All times are in GMT+6 (Bangladesh Standard Time)**\n\n---\n**Made by Zircon**`);
             return;
         } else if (content === '!status') {
             console.log(`📊 Status command received from ${userName}`);
