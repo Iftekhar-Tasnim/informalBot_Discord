@@ -719,8 +719,41 @@ client.on(Events.MessageCreate, async (message) => {
         // Check if registrations are currently open for this hour
         if (!isRegistrationOpen(tracking.lastReset)) {
             console.log(`⏰ Registration period closed for channel ${channelId}. Waiting for next hour.`);
-            // Delete any non-command messages during closed period
-            if (!messageContent.startsWith('!') && messageContent !== '+' && messageContent !== '-') {
+            
+            // Handle + and - commands during closed period
+            if (messageContent === '+' || messageContent === '-') {
+                const action = messageContent === '+' ? 'register' : 'cancel registration';
+                console.log(`❌ ${userName} tried to ${action} during closed period`);
+                
+                // Delete the user's message
+                try {
+                    await message.delete();
+                } catch (error) {
+                    console.log(`Could not delete message: ${error.message}`);
+                }
+                
+                // Send registration closed message
+                try {
+                    const warningMsg = await message.channel.send({
+                        content: `# 🎯 Salamanca Informal Registration\n\n⏰ **Registration Period Closed!**\n\n❌ **${getUserDisplayName(message)}**, you cannot ${action} right now.\n\n🕐 **Current Time:** GMT+6 ${getCurrentGMT6Readable()}\n⏰ **Next Registration Opens:** ${getNextResetTime(tracking.lastReset)}\n\n⏳ **Please wait for the next hour to ${action}.**\n\n📋 **Available Commands:**\n• \`!ping\` - Test bot response\n• \`!help\` - Show help\n• \`!stats\` - Show status\n• \`!status\` - Check bot status\n\n---\n**Made by Zircon**`
+                    });
+                    
+                    // Auto-delete warning after 2 minutes
+                    setTimeout(async () => {
+                        try {
+                            await warningMsg.delete();
+                        } catch (error) {
+                            console.log(`Could not delete warning message: ${error.message}`);
+                        }
+                    }, 120000);
+                } catch (error) {
+                    console.error(`❌ Failed to send registration closed message: ${error.message}`);
+                }
+                return;
+            }
+            
+            // Delete any other non-command messages during closed period
+            if (!messageContent.startsWith('!')) {
                 try {
                     await message.delete();
                 } catch (error) {
@@ -729,7 +762,7 @@ client.on(Events.MessageCreate, async (message) => {
                 
                 try {
                     await message.channel.send({
-                        content: `# 🎯 Salamanca Informal Registration\n\n⏰ **Registration Period Closed!**\n\n🕐 **Current Time:** GMT+6 ${getCurrentGMT6Readable()}\n⏰ **Next Registration:** ${getNextResetTime(tracking.lastReset)}\n\nPlease wait for the next hour to register.\n\n---\n**Made by Zircon**`
+                        content: `# 🎯 Salamanca Informal Registration\n\n⏰ **Registration Period Closed!**\n\n🕐 **Current Time:** GMT+6 ${getCurrentGMT6Readable()}\n⏰ **Next Registration Opens:** ${getNextResetTime(tracking.lastReset)}\n\n⏳ **Please wait for the next hour to register.**\n\n📋 **Available Commands:**\n• \`!ping\` - Test bot response\n• \`!help\` - Show help\n• \`!stats\` - Show status\n• \`!status\` - Check bot status\n\n---\n**Made by Zircon**`
                     }).then(warningMsg => {
                         // Auto-delete warning after 2 minutes
                         setTimeout(async () => {
